@@ -673,8 +673,42 @@ export function UploadForm() {
           </div>
 
           {error && (
-            <div className="w-full text-center text-sm" style={{ color: 'var(--accent2)' }}>
-              {error}
+            <div style={{
+              background: 'linear-gradient(90deg, rgba(255, 59, 92, 0.08), rgba(255, 59, 92, 0.02), rgba(255, 59, 92, 0.08))',
+              border: '1px solid rgba(255, 59, 92, 0.2)',
+              borderRadius: '6px',
+              padding: '12px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 16px rgba(255, 59, 92, 0.05)',
+              width: '100%'
+            }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                background: 'rgba(255, 59, 92, 0.15)',
+                color: 'var(--accent2)',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                fontFamily: 'var(--font-mono)'
+              }}>!</span>
+              <p style={{
+                color: 'var(--accent2)',
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                margin: 0,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
+                fontWeight: '500'
+              }}>
+                {error}
+              </p>
             </div>
           )}
 
@@ -795,7 +829,17 @@ export function UploadForm() {
                         <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Link2 size={12} style={{ color: 'var(--accent)' }} /> Share Links:
                         </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div 
+                          className="custom-scrollbar"
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            maxHeight: '220px',
+                            overflowY: 'auto',
+                            paddingRight: '4px'
+                          }}
+                        >
                           {gal.links && gal.links.filter((l: any) => l.status === 'active').length === 0 && (
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                               No active links. Generate a new link below to share this gallery.
@@ -1191,14 +1235,39 @@ export function UploadForm() {
 
               {authError && (
                 <div style={{
-                  background: 'rgba(255, 59, 92, 0.08)',
+                  background: 'linear-gradient(90deg, rgba(255, 59, 92, 0.08), rgba(255, 59, 92, 0.02), rgba(255, 59, 92, 0.08))',
                   border: '1px solid rgba(255, 59, 92, 0.2)',
-                  borderRadius: '4px',
-                  padding: '10px',
-                  textAlign: 'center'
+                  borderRadius: '6px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 16px rgba(255, 59, 92, 0.05)'
                 }}>
-                  <p style={{ color: 'var(--accent2)', fontSize: '11px', fontFamily: 'var(--font-mono)', margin: 0 }}>
-                    ⚠️ {authError}
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 59, 92, 0.15)',
+                    color: 'var(--accent2)',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    fontFamily: 'var(--font-mono)'
+                  }}>!</span>
+                  <p style={{
+                    color: 'var(--accent2)',
+                    fontSize: '11px',
+                    fontFamily: 'var(--font-mono)',
+                    margin: 0,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                    fontWeight: '500'
+                  }}>
+                    {authError}
                   </p>
                 </div>
               )}

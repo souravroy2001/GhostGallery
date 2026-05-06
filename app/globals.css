@@ -70,6 +70,16 @@
     overflow-x: hidden;
   }
 
+  ::selection {
+    background: var(--accent) !important;
+    color: var(--text) !important;
+  }
+
+  ::-moz-selection {
+    background: var(--accent) !important;
+    color: var(--text) !important;
+  }
+
   /* Grid background */
   body::before {
     content: '';
@@ -965,6 +975,30 @@
 
 .gallery-item-premium:hover .img-overlay-premium {
   opacity: 1 !important;
+}
+
+/* Custom Thin Scrollbar for Link List */
+.custom-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--border) transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border) !important;
+  border-radius: 10px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent) !important;
 }
 
 /* Lightbox */
