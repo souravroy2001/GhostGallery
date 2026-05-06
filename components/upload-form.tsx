@@ -91,6 +91,7 @@ export function UploadForm() {
   const [error, setError] = useState<string | null>(null)
   const [watermarkEnabled, setWatermarkEnabled] = useState(true)
   const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL')
+  const [galleryTitle, setGalleryTitle] = useState('Ghost Gallery')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Supabase Auth States
@@ -247,7 +248,7 @@ export function UploadForm() {
           formData.append('files', file)
         }
       }
-      formData.append('title', 'Ghost Gallery')
+      formData.append('title', galleryTitle)
       formData.append('watermarkText', watermarkEnabled ? watermarkText : 'disabled')
       formData.append('expiryHours', expiryHours.toString())
 
@@ -629,47 +630,132 @@ export function UploadForm() {
             </div>
           </div>
 
-          {/* Watermark Section */}
-          <div className="watermark-section" style={{ width: '100%', background: 'rgba(20, 28, 35, 0.4)', border: '1px solid var(--border)', borderRadius: '4px', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)', textAlign: 'left' }}>
+          {/* Watermark & Title Section */}
+          <div 
+            className="watermark-section" 
+            style={{ 
+              width: '100%', 
+              background: 'rgba(14, 20, 25, 0.65)', 
+              backdropFilter: 'blur(8px)',
+              border: '1px solid var(--border)', 
+              borderRadius: '12px', 
+              padding: '24px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '20px', 
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 229, 255, 0.02)', 
+              textAlign: 'left',
+              transition: 'all 0.2s ease-in-out'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.2)'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+          >
             <div className="watermark-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <p className="section-label" style={{ margin: 0 }}>💧 WATERMARK SECURITY</p>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={watermarkEnabled}
-                  onChange={(e) => setWatermarkEnabled(e.target.checked)}
-                  style={{ display: 'none' }}
-                />
-                <span className="slider"></span>
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 229, 255, 0.08)',
+                  color: 'var(--accent)',
+                  fontSize: '14px'
+                }}>
+                  ⬡
+                </span>
+                <p className="section-label" style={{ 
+                  margin: 0, 
+                  fontSize: '11px', 
+                  fontFamily: 'var(--font-mono)', 
+                  letterSpacing: '0.08em', 
+                  color: 'var(--text)'
+                }}>
+                  GALLERY SETTINGS & PROTECTION
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>WATERMARK</span>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={watermarkEnabled}
+                    onChange={(e) => setWatermarkEnabled(e.target.checked)}
+                    style={{ display: 'none' }}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
             </div>
 
-            {watermarkEnabled && (
-              <div className="watermark-input-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '16px', width: '100%', flexDirection: watermarkEnabled ? 'row' : 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>GALLERY DISPLAY TITLE</label>
                 <input
                   type="text"
-                  className="watermark-input"
-                  value={watermarkText}
-                  onChange={(e) => setWatermarkText(e.target.value)}
-                  placeholder="Enter watermark text (e.g., CONFIDENTIAL)"
-                  maxLength={24}
+                  value={galleryTitle}
+                  onChange={(e) => setGalleryTitle(e.target.value)}
+                  placeholder="Enter gallery title (e.g., Ghost Gallery)"
                   style={{
                     width: '100%',
                     background: 'rgba(8, 12, 15, 0.95)',
-                    border: '1px solid rgba(0, 229, 255, 0.3)',
-                    borderRadius: '4px',
-                    padding: '12px 16px',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    padding: '14px 18px',
                     color: '#ffffff',
                     fontFamily: 'var(--font-mono), monospace',
                     fontSize: '13px',
                     outline: 'none',
+                    letterSpacing: '0.05em',
+                    transition: 'all 0.15s'
                   }}
+                  onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+                  onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
                 />
-                <span className="input-hint" style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono), monospace' }}>
-                  Will be tiled diagonally over all images
-                </span>
               </div>
-            )}
+
+              {watermarkEnabled && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                  <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>WATERMARK TEXT PROTECTION</label>
+                  <input
+                    type="text"
+                    className="watermark-input"
+                    value={watermarkText}
+                    onChange={(e) => setWatermarkText(e.target.value)}
+                    placeholder="Enter watermark text (e.g., CONFIDENTIAL)"
+                    maxLength={24}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(8, 12, 15, 0.95)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      padding: '14px 18px',
+                      color: '#ffffff',
+                      fontFamily: 'var(--font-mono), monospace',
+                      fontSize: '13px',
+                      outline: 'none',
+                      letterSpacing: '0.05em',
+                      transition: 'all 0.15s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+                    onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+                  />
+                </div>
+              )}
+            </div>
+
+            <span className="input-hint" style={{ 
+              fontSize: '11px', 
+              color: 'var(--text-muted)', 
+              fontFamily: 'var(--font-mono), monospace',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              paddingLeft: '4px'
+            }}>
+              <span style={{ color: 'var(--accent)', fontSize: '12px' }}>⬡</span> Custom title and watermark text will be preserved securely.
+            </span>
           </div>
 
           {error && (

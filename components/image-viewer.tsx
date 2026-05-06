@@ -431,7 +431,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
     <div className={`gallery-viewer ${blurred ? "blurred" : ""} secure-image-container`}>
       {/* Header */}
       <div className="viewer-header">
-        <span className="viewer-logo">⬡ GHOST GALLERY</span>
+        <span className="viewer-logo">⬡ {gallery?.title?.toUpperCase() || 'GHOST GALLERY'}</span>
         <div className="viewer-meta">
           <span className="session-badge">Session: {sessionId.slice(0, 8).toUpperCase()}</span>
           {timeLeft !== null && (
@@ -542,7 +542,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
                   color: 'var(--text)',
                   letterSpacing: '0.05em'
                 }}>
-                  {img.filename.length > 20 ? img.filename.slice(0, 17) + '...' : img.filename}
+                  {gallery.title || 'GHOST GALLERY'} - PHOTO {idx + 1}
                 </span>
                 <span style={{
                   display: 'flex',
@@ -610,7 +610,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
               borderRadius: '20px',
               backdropFilter: 'blur(8px)'
             }}>
-              {gallery.images[lightbox].filename}
+              {gallery.title || 'GHOST GALLERY'} - PHOTO {lightbox + 1}
             </span>
             <div style={{
               fontFamily: 'var(--font-mono)',
