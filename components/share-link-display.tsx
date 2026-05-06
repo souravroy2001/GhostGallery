@@ -8,9 +8,10 @@ interface ShareLinkDisplayProps {
   expiresAt: string
   watermarkText?: string
   onReset?: () => void
+  originalUrl?: string
 }
 
-export function ShareLinkDisplay({ shareUrl, expiresAt, watermarkText, onReset }: ShareLinkDisplayProps) {
+export function ShareLinkDisplay({ shareUrl, expiresAt, watermarkText, onReset, originalUrl }: ShareLinkDisplayProps) {
   const [copied, setCopied] = useState(false)
   const [timeLeftStr, setTimeLeftStr] = useState<string>('Calculating...')
 
@@ -21,7 +22,8 @@ export function ShareLinkDisplay({ shareUrl, expiresAt, watermarkText, onReset }
   }
 
   const handlePreview = () => {
-    const previewUrl = shareUrl.includes('?') ? `${shareUrl}&preview=true` : `${shareUrl}?preview=true`
+    const targetUrl = originalUrl || shareUrl
+    const previewUrl = targetUrl.includes('?') ? `${targetUrl}&preview=true` : `${targetUrl}?preview=true`
     window.open(previewUrl, '_blank', 'noopener,noreferrer')
   }
 

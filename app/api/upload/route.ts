@@ -112,16 +112,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload any images' }, { status: 500 })
     }
 
-    // Create share link with token
-    console.log('Creating share link...');
-    const token = nanoid(32)
+    // Create share link with long token
+    console.log('Creating long secure share link...');
+    const longToken = nanoid(32)
     const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000)
 
     const { data: shareLink, error: shareLinkError } = await supabase
       .from('share_links')
       .insert({
         gallery_id: gallery.id,
-        token,
+        token: longToken,
         expires_at: expiresAt.toISOString(),
         one_time_use: true,
       })
@@ -133,8 +133,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Failed to create share link: ${shareLinkError.message}` }, { status: 500 })
     }
 
-    const shareUrl = `${request.nextUrl.origin}/view/${token}`
-    console.log(`Upload complete. Share URL: ${shareUrl}`);
+    // Create short redirect link with 6-char code
+    console.log('Creating short redirect link...');
+    const shortCode = nanoid(6)
+    const { error: shortLinkError } = await supabase
+      .from('share_links')
+      .insert({
+        gallery_id: gallery.id,
+        token: shortCode,
+        expires_at: expiresAt.toISOString(),
+        one_time_use: false, // short redirect code remains valid until parent link expires
+      })
+
+    if (shortLinkError) {
+      console.warn('Short link creation warning:', shortLinkError.message)
+    }
+
+    const shareUrl = `${request.nextUrl.origin}/view/${longToken}`
+    const shortenedUrl = `${request.nextUrl.origin}/s/${shortCode}`
+    console.log(`Upload complete. Original: ${shareUrl} | Shortened: ${shortenedUrl}`);
 
     return NextResponse.json({
       success: true,
@@ -144,14 +161,15 @@ export async function POST(request: NextRequest) {
         imageCount: uploadedImages.length,
       },
       shareLink: {
-        url: shareUrl,
-        token,
+        url: shortenedUrl,
+        originalUrl: shareUrl,
+        token: longToken,
         expiresAt: expiresAt.toISOString(),
       },
     })
   } catch (error) {
     console.error('Unexpected upload error:', error)
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Upload failed due to an unexpected error',
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })

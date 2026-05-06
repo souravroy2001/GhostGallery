@@ -12,6 +12,7 @@ interface FileWithPreview extends File {
 interface ShareResult {
   url: string
   expiresAt: string
+  originalUrl?: string
 }
 
 const EXPIRY_OPTIONS = [
@@ -94,6 +95,7 @@ export function UploadForm() {
       setShareResult({
         url: data.shareLink.url,
         expiresAt: data.shareLink.expiresAt,
+        originalUrl: data.shareLink.originalUrl,
       })
 
       // Clean up previews
@@ -112,6 +114,7 @@ export function UploadForm() {
         shareUrl={shareResult.url}
         expiresAt={shareResult.expiresAt}
         watermarkText={watermarkEnabled ? watermarkText : 'disabled'}
+        originalUrl={shareResult.originalUrl}
         onReset={() => {
           setShareResult(null)
           setError(null)
@@ -124,7 +127,7 @@ export function UploadForm() {
     <div className="upload-view">
       <div className="hero-text">
         <div className="logo-mark">⬡</div>
-        <h1>GHOST<span className="accent">GALLERY</span></h1>
+        <h1>GHOST <span className="accent">GALLERY</span></h1>
         <p className="tagline">One-time secure photo delivery. View once. Gone forever.</p>
       </div>
 
