@@ -255,7 +255,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
             animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
             margin: '0 auto 24px auto'
           }}>
-            <span style={{ fontSize: '28px' }}>🔒</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
           </div>
           
           <div>
@@ -312,7 +315,12 @@ export function ImageViewer({ token }: ImageViewerProps) {
             animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
             margin: '0 auto 24px auto'
           }}>
-            <span style={{ fontSize: '28px' }}>⌛</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 2h14" />
+              <path d="M5 22h14" />
+              <path d="M19 2v4c0 3.87-3.13 7-7 7s-7-3.13-7-7V2" />
+              <path d="M12 13c-3.87 0-7 3.13-7 7v2h14v-2c0-3.13-3.13-7-7-7z" />
+            </svg>
           </div>
           
           <div>
@@ -369,7 +377,11 @@ export function ImageViewer({ token }: ImageViewerProps) {
             animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
             margin: '0 auto 24px auto'
           }}>
-            <span style={{ fontSize: '28px' }}>⚠</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
           </div>
           
           <div>
@@ -438,7 +450,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
       {blurred && (
         <div className="blur-overlay">
           <div className="blur-message">
-            <span className="blur-icon">🔒</span>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent)', filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.4))', marginBottom: '8px' }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
             <p>Content hidden</p>
             <p className="blur-sub">Return to this tab to continue viewing</p>
           </div>
