@@ -245,31 +245,171 @@ export function ImageViewer({ token }: ImageViewerProps) {
 
   if (state === "used") {
     return (
-      <div className="status-screen error-screen">
-        <div className="status-icon used-icon">🔒</div>
-        <h2>Link Already Used</h2>
-        <p>This secure link has already been accessed once and is now invalid.</p>
-        <p className="sub-hint">Each Ghost Gallery link can only be viewed a single time.</p>
+      <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
+        <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
+          <div className="success-icon" style={{ 
+            background: 'rgba(255, 59, 92, 0.08)', 
+            border: '2px solid var(--accent2)', 
+            color: 'var(--accent2)',
+            boxShadow: '0 0 25px rgba(255, 59, 92, 0.25)',
+            animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            margin: '0 auto 24px auto'
+          }}>
+            <span style={{ fontSize: '28px' }}>🔒</span>
+          </div>
+          
+          <div>
+            <span style={{ 
+              fontFamily: 'var(--font-mono)', 
+              fontSize: '11px', 
+              color: 'var(--accent2)', 
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              display: 'inline-block',
+              marginBottom: '8px'
+            }}>
+              [ ACCESS DENIED ]
+            </span>
+            <h2 style={{ fontSize: '28px', color: 'var(--text)', marginBottom: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>Link Already Used</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
+              This secure Ghost Gallery link has already been accessed and is now permanently destroyed.
+            </p>
+            <div style={{ 
+              background: 'rgba(20, 28, 35, 0.6)', 
+              border: '1px solid var(--border)', 
+              padding: '12px 16px', 
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              textAlign: 'left',
+              lineHeight: '1.5'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span>STATUS:</span>
+                <span style={{ color: 'var(--accent2)', fontWeight: 'bold' }}>REVOKED (403)</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>SECURITY:</span>
+                <span style={{ color: 'var(--text)' }}>SINGLE-USE POLICY</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (state === "expired") {
     return (
-      <div className="status-screen error-screen">
-        <div className="status-icon">⌛</div>
-        <h2>Link Expired</h2>
-        <p>This link has passed its expiry time and is no longer accessible.</p>
+      <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
+        <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
+          <div className="success-icon" style={{ 
+            background: 'rgba(255, 184, 0, 0.08)', 
+            border: '2px solid var(--warning)', 
+            color: 'var(--warning)',
+            boxShadow: '0 0 25px rgba(255, 184, 0, 0.25)',
+            animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            margin: '0 auto 24px auto'
+          }}>
+            <span style={{ fontSize: '28px' }}>⌛</span>
+          </div>
+          
+          <div>
+            <span style={{ 
+              fontFamily: 'var(--font-mono)', 
+              fontSize: '11px', 
+              color: 'var(--warning)', 
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              display: 'inline-block',
+              marginBottom: '8px'
+            }}>
+              [ TIME EXPIRED ]
+            </span>
+            <h2 style={{ fontSize: '28px', color: 'var(--text)', marginBottom: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>Link Expired</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
+              This secure Ghost Gallery link has exceeded its validity timeframe and has been automatically deactivated.
+            </p>
+            <div style={{ 
+              background: 'rgba(20, 28, 35, 0.6)', 
+              border: '1px solid var(--border)', 
+              padding: '12px 16px', 
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              textAlign: 'left',
+              lineHeight: '1.5'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span>STATUS:</span>
+                <span style={{ color: 'var(--warning)', fontWeight: 'bold' }}>EXPIRED (410)</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>RETENTION:</span>
+                <span style={{ color: 'var(--text)' }}>AUTO-DESTRUCT ACTIVE</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (state === "invalid" || !gallery) {
     return (
-      <div className="status-screen error-screen">
-        <div className="status-icon">⚠</div>
-        <h2>Invalid Link</h2>
-        <p>This token does not exist or was never issued.</p>
+      <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
+        <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
+          <div className="success-icon" style={{ 
+            background: 'rgba(255, 59, 92, 0.08)', 
+            border: '2px solid var(--accent2)', 
+            color: 'var(--accent2)',
+            boxShadow: '0 0 25px rgba(255, 59, 92, 0.25)',
+            animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            margin: '0 auto 24px auto'
+          }}>
+            <span style={{ fontSize: '28px' }}>⚠</span>
+          </div>
+          
+          <div>
+            <span style={{ 
+              fontFamily: 'var(--font-mono)', 
+              fontSize: '11px', 
+              color: 'var(--accent2)', 
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              display: 'inline-block',
+              marginBottom: '8px'
+            }}>
+              [ LINK UNVERIFIED ]
+            </span>
+            <h2 style={{ fontSize: '28px', color: 'var(--text)', marginBottom: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>Invalid Link</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
+              The cryptographic token provided is invalid, has been tampered with, or does not exist on our servers.
+            </p>
+            <div style={{ 
+              background: 'rgba(20, 28, 35, 0.6)', 
+              border: '1px solid var(--border)', 
+              padding: '12px 16px', 
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              textAlign: 'left',
+              lineHeight: '1.5'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span>STATUS:</span>
+                <span style={{ color: 'var(--accent2)', fontWeight: 'bold' }}>NOT FOUND (404)</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>SECURITY:</span>
+                <span style={{ color: 'var(--text)' }}>CRYPTO-TOKEN FAILURE</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

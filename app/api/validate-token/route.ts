@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Link has expired', valid: false }, { status: 403 })
     }
 
-    // For one-time use links, check if already accessed (skip if previewing)
-    if (!preview && shareLink.one_time_use && shareLink.access_count > 0) {
+    // For one-time use links, check if already accessed (never allow preview once accessed)
+    if (shareLink.one_time_use && shareLink.access_count > 0) {
       return NextResponse.json({ 
         error: 'This link has already been used and cannot be accessed again.', 
         valid: false 
