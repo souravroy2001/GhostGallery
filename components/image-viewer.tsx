@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { AlertTriangle, Clock, ShieldAlert, Eye, Lock, Maximize2 } from 'lucide-react'
 
 interface GalleryImage {
   id: string
@@ -247,9 +248,9 @@ export function ImageViewer({ token }: ImageViewerProps) {
     return (
       <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
         <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
-          <div className="success-icon" style={{ 
-            background: 'rgba(255, 59, 92, 0.08)', 
-            border: '2px solid var(--accent2)', 
+          <div className="success-icon" style={{
+            background: 'rgba(255, 59, 92, 0.08)',
+            border: '2px solid var(--accent2)',
             color: 'var(--accent2)',
             boxShadow: '0 0 25px rgba(255, 59, 92, 0.25)',
             animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -260,12 +261,12 @@ export function ImageViewer({ token }: ImageViewerProps) {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </div>
-          
+
           <div>
-            <span style={{ 
-              fontFamily: 'var(--font-mono)', 
-              fontSize: '11px', 
-              color: 'var(--accent2)', 
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: 'var(--accent2)',
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
               display: 'inline-block',
@@ -277,10 +278,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
             <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
               This secure Ghost Gallery link has already been accessed and is now permanently destroyed.
             </p>
-            <div style={{ 
-              background: 'rgba(20, 28, 35, 0.6)', 
-              border: '1px solid var(--border)', 
-              padding: '12px 16px', 
+            <div style={{
+              background: 'rgba(20, 28, 35, 0.6)',
+              border: '1px solid var(--border)',
+              padding: '12px 16px',
               borderRadius: '4px',
               fontFamily: 'var(--font-mono)',
               fontSize: '12px',
@@ -307,9 +308,9 @@ export function ImageViewer({ token }: ImageViewerProps) {
     return (
       <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
         <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
-          <div className="success-icon" style={{ 
-            background: 'rgba(255, 184, 0, 0.08)', 
-            border: '2px solid var(--warning)', 
+          <div className="success-icon" style={{
+            background: 'rgba(255, 184, 0, 0.08)',
+            border: '2px solid var(--warning)',
             color: 'var(--warning)',
             boxShadow: '0 0 25px rgba(255, 184, 0, 0.25)',
             animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -322,12 +323,12 @@ export function ImageViewer({ token }: ImageViewerProps) {
               <path d="M12 13c-3.87 0-7 3.13-7 7v2h14v-2c0-3.13-3.13-7-7-7z" />
             </svg>
           </div>
-          
+
           <div>
-            <span style={{ 
-              fontFamily: 'var(--font-mono)', 
-              fontSize: '11px', 
-              color: 'var(--warning)', 
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: 'var(--warning)',
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
               display: 'inline-block',
@@ -339,10 +340,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
             <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
               This secure Ghost Gallery link has exceeded its validity timeframe and has been automatically deactivated.
             </p>
-            <div style={{ 
-              background: 'rgba(20, 28, 35, 0.6)', 
-              border: '1px solid var(--border)', 
-              padding: '12px 16px', 
+            <div style={{
+              background: 'rgba(20, 28, 35, 0.6)',
+              border: '1px solid var(--border)',
+              padding: '12px 16px',
               borderRadius: '4px',
               fontFamily: 'var(--font-mono)',
               fontSize: '12px',
@@ -369,9 +370,9 @@ export function ImageViewer({ token }: ImageViewerProps) {
     return (
       <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
         <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
-          <div className="success-icon" style={{ 
-            background: 'rgba(255, 59, 92, 0.08)', 
-            border: '2px solid var(--accent2)', 
+          <div className="success-icon" style={{
+            background: 'rgba(255, 59, 92, 0.08)',
+            border: '2px solid var(--accent2)',
             color: 'var(--accent2)',
             boxShadow: '0 0 25px rgba(255, 59, 92, 0.25)',
             animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -383,12 +384,12 @@ export function ImageViewer({ token }: ImageViewerProps) {
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </div>
-          
+
           <div>
-            <span style={{ 
-              fontFamily: 'var(--font-mono)', 
-              fontSize: '11px', 
-              color: 'var(--accent2)', 
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: 'var(--accent2)',
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
               display: 'inline-block',
@@ -400,10 +401,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
             <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
               The cryptographic token provided is invalid, has been tampered with, or does not exist on our servers.
             </p>
-            <div style={{ 
-              background: 'rgba(20, 28, 35, 0.6)', 
-              border: '1px solid var(--border)', 
-              padding: '12px 16px', 
+            <div style={{
+              background: 'rgba(20, 28, 35, 0.6)',
+              border: '1px solid var(--border)',
+              padding: '12px 16px',
               borderRadius: '4px',
               fontFamily: 'var(--font-mono)',
               fontSize: '12px',
@@ -441,9 +442,24 @@ export function ImageViewer({ token }: ImageViewerProps) {
         </div>
       </div>
 
-      {/* Warning Banner */}
-      <div className="viewer-warning">
-        ⚠ ONE-TIME ACCESS — This session is recorded. All images are watermarked with your session ID and timestamp.
+      {/* Redesigned Cyber Notice Banner */}
+      <div style={{
+        background: 'linear-gradient(90deg, rgba(255, 184, 0, 0.08), rgba(255, 184, 0, 0.02), rgba(255, 184, 0, 0.08))',
+        borderBottom: '1px solid rgba(255, 184, 0, 0.2)',
+        padding: '14px 24px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '11px',
+        color: 'var(--warning)',
+        letterSpacing: '0.05em',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        textAlign: 'center',
+        textTransform: 'uppercase'
+      }}>
+        <AlertTriangle size={14} style={{ color: '#f59e0b' }} />
+        <span>ONE-TIME ACCESS ONLY — This session is securely logged. All images are dynamically watermarked.</span>
       </div>
 
       {/* Blur Overlay */}
@@ -460,24 +476,84 @@ export function ImageViewer({ token }: ImageViewerProps) {
         </div>
       )}
 
-      {/* Gallery Grid */}
-      <div className="gallery-grid">
+      {/* Redesigned Premium Gallery Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '24px',
+        padding: '10px 32px 64px 32px',
+        maxWidth: '1400px',
+        margin: '0 auto'
+      }}>
         {gallery.images.map((img, idx) => (
           <div
             key={img.id}
-            className="gallery-item"
+            className="gallery-item-premium"
             onClick={() => setLightbox(idx)}
-            style={{ animationDelay: `${idx * 0.08}s` }}
+            style={{
+              position: 'relative',
+              aspectRatio: '1',
+              borderRadius: '12px',
+              border: '1px solid var(--border)',
+              background: 'rgba(10, 16, 22, 0.6)',
+              overflow: 'hidden',
+              cursor: 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+              animation: 'fadeIn 0.5s ease both',
+              animationDelay: `${idx * 0.08}s`
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--accent)';
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 229, 255, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
-            <div className="gallery-img-wrap">
+            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
               <WatermarkCanvas
                 src={getImageUrl(img.pathname)}
                 sessionId={sessionId}
                 visible={!blurred}
                 watermarkText={gallery.watermarkText}
               />
-              <div className="img-overlay">
-                <span>⬡ View</span>
+
+              {/* Sleek Minimalist Hover Overlay */}
+              <div
+                className="img-overlay-premium"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(to top, rgba(3, 7, 10, 0.8) 0%, rgba(3, 7, 10, 0) 60%)',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'space-between',
+                  padding: '16px',
+                  opacity: 0,
+                  transition: 'all 0.25s ease'
+                }}
+              >
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px',
+                  color: 'var(--text)',
+                  letterSpacing: '0.05em'
+                }}>
+                  {img.filename.length > 20 ? img.filename.slice(0, 17) + '...' : img.filename}
+                </span>
+                <span style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px',
+                  color: 'var(--accent)'
+                }}>
+                  <Eye size={12} /> VIEW
+                </span>
               </div>
             </div>
           </div>
@@ -486,7 +562,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
 
       {/* Lightbox */}
       {lightbox !== null && (
-        <div className="lightbox" onClick={() => setLightbox(null)}>
+        <div className="lightbox" onClick={() => setLightbox(null)} style={{ backdropFilter: 'blur(20px)' }}>
           <button className="lightbox-close" onClick={() => setLightbox(null)}>×</button>
 
           {gallery.images.length > 1 && (
@@ -511,7 +587,40 @@ export function ImageViewer({ token }: ImageViewerProps) {
             />
           </div>
 
-          <div className="lightbox-counter">{lightbox + 1} / {gallery.images.length}</div>
+          {/* Lightbox Caption */}
+          <div style={{
+            position: 'absolute',
+            bottom: '32px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px',
+            zIndex: 10
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              color: 'var(--text)',
+              letterSpacing: '0.05em',
+              background: 'rgba(10, 16, 22, 0.8)',
+              border: '1px solid var(--border)',
+              padding: '6px 16px',
+              borderRadius: '20px',
+              backdropFilter: 'blur(8px)'
+            }}>
+              {gallery.images[lightbox].filename}
+            </span>
+            <div style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: 'var(--text-muted)',
+              letterSpacing: '0.1em'
+            }}>
+              {lightbox + 1} / {gallery.images.length}
+            </div>
+          </div>
         </div>
       )}
     </div>

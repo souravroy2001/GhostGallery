@@ -963,6 +963,10 @@
   color: var(--accent);
 }
 
+.gallery-item-premium:hover .img-overlay-premium {
+  opacity: 1 !important;
+}
+
 /* Lightbox */
 .lightbox {
   position: fixed;

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Find the short link record
     const { data: shortLink, error: shortLinkError } = await supabase
       .from('share_links')
-      .select('gallery_id')
+      .select('gallery_id, expires_at')
       .eq('token', code)
       .single()
 
@@ -20,11 +20,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.redirect(new URL('/', request.nextUrl.origin))
     }
 
-    // Find the long link record (32 chars) for the same gallery
+    // Find the long link record (32 chars) for the same gallery with the exact paired expiration
     const { data: longLinks, error: longLinkError } = await supabase
       .from('share_links')
       .select('token')
       .eq('gallery_id', shortLink.gallery_id)
+      .eq('expires_at', shortLink.expires_at)
 
     if (longLinkError || !longLinks || longLinks.length === 0) {
       console.error(`Long token not found for gallery: ${shortLink.gallery_id}`);
@@ -38,8 +39,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.redirect(new URL('/', request.nextUrl.origin))
     }
 
-    // Perform direct, immediate 302 redirection to the secure viewer
+    // Perform direct, immediate 302 redirection to the secure viewer, forwarding any query params (e.g. preview=true)
     const destinationUrl = new URL(`/view/${longLink.token}`, request.nextUrl.origin)
+    destinationUrl.search = request.nextUrl.search
     console.log(`Redirecting directly to secure viewer: ${destinationUrl.toString()}`);
     return NextResponse.redirect(destinationUrl)
   } catch (err) {

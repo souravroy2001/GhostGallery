@@ -43,12 +43,15 @@ ALTER TABLE share_links ENABLE ROW LEVEL SECURITY;
 -- Galleries Policies
 CREATE POLICY "Enable insert for everyone" ON galleries FOR INSERT WITH CHECK (true);
 CREATE POLICY "Enable select for everyone" ON galleries FOR SELECT USING (true);
+CREATE POLICY "Enable delete for everyone" ON galleries FOR DELETE USING (true);
 
 -- Gallery Images Policies
 CREATE POLICY "Enable insert for everyone" ON gallery_images FOR INSERT WITH CHECK (true);
 CREATE POLICY "Enable select for everyone" ON gallery_images FOR SELECT USING (true);
+CREATE POLICY "Enable delete for everyone" ON gallery_images FOR DELETE USING (true);
 
 -- Share Links Policies
 CREATE POLICY "Enable insert for everyone" ON share_links FOR INSERT WITH CHECK (true);
 CREATE POLICY "Enable select for everyone" ON share_links FOR SELECT USING (true);
 CREATE POLICY "Enable update for everyone" ON share_links FOR UPDATE USING (true);
+CREATE POLICY "Enable delete for everyone" ON share_links FOR DELETE USING (true);
