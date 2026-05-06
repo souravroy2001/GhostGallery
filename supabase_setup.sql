@@ -1,4 +1,4 @@
--- SQL Setup for GhostGallery
+-- SQL Setup for Ghost Gallery
 
 -- 1. Create galleries table
 CREATE TABLE IF NOT EXISTS galleries (

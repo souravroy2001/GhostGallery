@@ -36,7 +36,7 @@ export function UploadForm() {
   const processFiles = (newFiles: FileList | null) => {
     if (!newFiles) return
     const validFiles = Array.from(newFiles).filter(f => f.type.startsWith('image/'))
-    
+
     validFiles.forEach(file => {
       const preview = URL.createObjectURL(file)
       const fileWithPreview = Object.assign(file, {
@@ -76,7 +76,7 @@ export function UploadForm() {
     try {
       const formData = new FormData()
       files.forEach(file => formData.append('files', file))
-      formData.append('title', 'GhostGallery') // Default title for now
+      formData.append('title', 'Ghost Gallery') // Default title for now
       formData.append('watermarkText', watermarkEnabled ? watermarkText : 'disabled')
       formData.append('expiryHours', expiryHours.toString())
 
@@ -108,14 +108,14 @@ export function UploadForm() {
 
   if (shareResult) {
     return (
-      <ShareLinkDisplay 
-        shareUrl={shareResult.url} 
-        expiresAt={shareResult.expiresAt} 
+      <ShareLinkDisplay
+        shareUrl={shareResult.url}
+        expiresAt={shareResult.expiresAt}
         watermarkText={watermarkEnabled ? watermarkText : 'disabled'}
         onReset={() => {
           setShareResult(null)
           setError(null)
-        }} 
+        }}
       />
     )
   }
@@ -194,16 +194,16 @@ export function UploadForm() {
         <div className="watermark-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <p className="section-label" style={{ margin: 0 }}>💧 WATERMARK SECURITY</p>
           <label className="toggle-switch">
-            <input 
-              type="checkbox" 
-              checked={watermarkEnabled} 
-              onChange={(e) => setWatermarkEnabled(e.target.checked)} 
+            <input
+              type="checkbox"
+              checked={watermarkEnabled}
+              onChange={(e) => setWatermarkEnabled(e.target.checked)}
               style={{ display: 'none' }}
             />
             <span className="slider"></span>
           </label>
         </div>
-        
+
         {watermarkEnabled && (
           <div className="watermark-input-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
             <input

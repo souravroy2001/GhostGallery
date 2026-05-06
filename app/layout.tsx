@@ -8,7 +8,7 @@ const bebasNeue = Bebas_Neue({ subsets: ['latin'], weight: ['400'], variable: '-
 const dmSans = DM_Sans({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-body' })
 
 export const metadata: Metadata = {
-  title: 'GhostGallery - Secure One-Time Delivery',
+  title: 'Ghost Gallery - Secure One-Time Delivery',
   description: 'Share photos securely with time-limited, one-time access links',
   generator: 'v0.app',
   icons: {

@@ -1,1 +1,1 @@
-# GhostGallery
+# Ghost Gallery

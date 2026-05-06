@@ -19,16 +19,16 @@ interface ImageViewerProps {
   token: string
 }
 
-function WatermarkCanvas({ 
-  src, 
-  sessionId, 
-  visible, 
-  watermarkText 
-}: { 
-  src: string, 
-  sessionId: string, 
-  visible: boolean, 
-  watermarkText: string 
+function WatermarkCanvas({
+  src,
+  sessionId,
+  visible,
+  watermarkText
+}: {
+  src: string,
+  sessionId: string,
+  visible: boolean,
+  watermarkText: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [loaded, setLoaded] = useState(false)
@@ -46,24 +46,24 @@ function WatermarkCanvas({
       canvas.width = img.width
       canvas.height = img.height
       ctx.drawImage(img, 0, 0)
-      
+
       // Watermark overlay
       if (watermarkText && watermarkText !== 'disabled' && watermarkText !== '__disabled__') {
         ctx.save()
         ctx.globalAlpha = 0.35
-        ctx.fillStyle = "#ff3b5c" // GhostGallery accent2
+        ctx.fillStyle = "#ff3b5c" // Ghost Gallery accent2
         ctx.font = `bold ${Math.max(14, img.width / 40)}px 'Space Mono', monospace`
         ctx.textAlign = "center"
-        
+
         const ts = new Date().toISOString()
         const sid = sessionId ? sessionId.slice(0, 8).toUpperCase() : "UNKNOWN"
         const lines = [`⚠ ${watermarkText.toUpperCase()} ⚠`, `Session: ${sid}`, ts]
-        
+
         // Diagonal tiled watermarks
         ctx.translate(canvas.width / 2, canvas.height / 2)
         ctx.rotate(-Math.PI / 6)
         const step = Math.max(160, img.width / 4)
-        
+
         for (let x = -img.width; x < img.width; x += step) {
           for (let y = -img.height; y < img.height; y += step) {
             lines.forEach((line, i) => {
@@ -170,11 +170,11 @@ export function ImageViewer({ token }: ImageViewerProps) {
     const handleVis = () => setBlurred(document.hidden)
     const handleBlur = () => setBlurred(true)
     const handleFocus = () => setBlurred(false)
-    
+
     document.addEventListener("visibilitychange", handleVis)
     window.addEventListener("blur", handleBlur)
     window.addEventListener("focus", handleFocus)
-    
+
     return () => {
       document.removeEventListener("visibilitychange", handleVis)
       window.removeEventListener("blur", handleBlur)
@@ -249,7 +249,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
         <div className="status-icon used-icon">🔒</div>
         <h2>Link Already Used</h2>
         <p>This secure link has already been accessed once and is now invalid.</p>
-        <p className="sub-hint">Each GhostGallery link can only be viewed a single time.</p>
+        <p className="sub-hint">Each Ghost Gallery link can only be viewed a single time.</p>
       </div>
     )
   }
@@ -278,7 +278,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
     <div className={`gallery-viewer ${blurred ? "blurred" : ""} secure-image-container`}>
       {/* Header */}
       <div className="viewer-header">
-        <span className="viewer-logo">⬡ GHOSTGALLERY</span>
+        <span className="viewer-logo">⬡ GHOST GALLERY</span>
         <div className="viewer-meta">
           <span className="session-badge">Session: {sessionId.slice(0, 8).toUpperCase()}</span>
           {timeLeft !== null && (
@@ -315,10 +315,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
             style={{ animationDelay: `${idx * 0.08}s` }}
           >
             <div className="gallery-img-wrap">
-              <WatermarkCanvas 
-                src={getImageUrl(img.pathname)} 
-                sessionId={sessionId} 
-                visible={!blurred} 
+              <WatermarkCanvas
+                src={getImageUrl(img.pathname)}
+                sessionId={sessionId}
+                visible={!blurred}
                 watermarkText={gallery.watermarkText}
               />
               <div className="img-overlay">
@@ -333,7 +333,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
       {lightbox !== null && (
         <div className="lightbox" onClick={() => setLightbox(null)}>
           <button className="lightbox-close" onClick={() => setLightbox(null)}>×</button>
-          
+
           {gallery.images.length > 1 && (
             <>
               <button
@@ -355,7 +355,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
               watermarkText={gallery.watermarkText}
             />
           </div>
-          
+
           <div className="lightbox-counter">{lightbox + 1} / {gallery.images.length}</div>
         </div>
       )}
