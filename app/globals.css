@@ -1256,3 +1256,10 @@
   background-color: var(--accent);
   box-shadow: 0 0 8px var(--accent);
 }
+
+/* Responsive Settings Card rows */
+@media (max-width: 640px) {
+  .gallery-settings-row {
+    flex-direction: column !important;
+  }
+}

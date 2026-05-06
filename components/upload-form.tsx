@@ -650,7 +650,7 @@ export function UploadForm() {
             onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.2)'}
             onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
           >
-            <div className="watermark-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div className="watermark-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
                   display: 'inline-flex',
@@ -689,7 +689,7 @@ export function UploadForm() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '16px', width: '100%', flexDirection: watermarkEnabled ? 'row' : 'column' }}>
+            <div className="gallery-settings-row" style={{ display: 'flex', gap: '16px', width: '100%', flexDirection: watermarkEnabled ? 'row' : 'column' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
                 <label style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>GALLERY DISPLAY TITLE</label>
                 <input

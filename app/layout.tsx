@@ -39,7 +39,7 @@ export default function RootLayout({
     <html lang="en" className={`${spaceMono.variable} ${bebasNeue.variable} ${dmSans.variable} bg-background`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen" suppressHydrationWarning>
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <Analytics />
       </body>
     </html>
   )
