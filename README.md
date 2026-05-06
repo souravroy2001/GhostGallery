@@ -1,6 +1,6 @@
 # ⬡ Ghost Gallery
 
-> **Secure, Time-Limited, One-Time Photo Sharing with Dynamic Watermarks**
+> **Secure, Time-Limited, One-Time Photo Sharing with Dynamic Watermarks & Custom Gallery Branding**
 
 Ghost Gallery is a state-of-the-art secure image delivery platform designed for photographers, designers, and privacy-conscious professionals. It allows you to share collections of photos with time-bound, single-use links that automatically expire and prevent unauthorized distribution.
 
@@ -9,12 +9,15 @@ Ghost Gallery is a state-of-the-art secure image delivery platform designed for 
 ## ✦ Features
 
 - 🛡 **One-Time Access Policy**: Links automatically destroy themselves after their first viewing session. Subsequent visits—even with manual `?preview=true` bypass attempts—are strictly rejected.
+- 🎨 **Custom Gallery Branding**: Create custom **Gallery Display Titles** that propagate dynamically throughout the client view pages instead of plain hardcoded labels.
+- 📁 **File-Name Masking Safeguards**: Hides raw technical file names (like `placeholder.jpg` or database UUID keys) from clients, displaying beautiful, sequential indices (e.g., `MY BIRTHDAY - PHOTO 1`) on both list cards and zoom overlays.
 - ⚡ **Lightning-Fast Image Delivery**: Optimized with private browser memory caching and parallelized database-to-storage fetch streams (`Promise.all`), cutting image load times by nearly 40%.
 - ◈ **Dynamic Session-Bound Watermarks**: Applies non-destructive, real-time diagonal tiled watermarks combining your custom text, the recipient's unique Session ID (SID), and a precise local timestamp directly onto a secure HTML5 Canvas.
 - ⬡ **Active Tab Guard (Focus Protection)**: Instantly blurs and hides the gallery contents with a secure lock mask if the recipient switches browser tabs, minimizes the window, or loses focus on the page.
 - 🛡 **Anti-Piracy & Theft Safeguards**: Disables mouse right-clicks, drag-and-drop actions, standard browser save-as keys (`Ctrl+S`/`Cmd+S`), print keys (`Ctrl+P`/`Cmd+P`), and print screen capture.
 - 🕒 **Flexible Expiry Configurations**: Senders can customize gallery lifetimes ranging from 1 hour, 24 hours, to 7 days, complete with warning banners and real-time countdown clocks.
-- 🎨 **Sleek Cyber-Futuristic Aesthetics**: Designed with premium typography, responsive layouts, neon glows, and custom-designed system status screens (Loading, Used, Expired, and Unverified).
+- 📱 **Fully Responsive Layouts**: The dashboard settings card stack vertically on mobile screens seamlessly with flex wrapping, preventing overlaps.
+- 🎚 **Theme-Consistent Custom Elements**: Overridden browser defaults with custom ultra-thin scrollbars and neon-cyan high-contrast text selection highlights.
 
 ---
 
