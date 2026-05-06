@@ -1,9 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { X, ChevronLeft, ChevronRight, AlertCircle, Clock, Shield } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 interface GalleryImage {
   id: string
@@ -22,334 +19,344 @@ interface ImageViewerProps {
   token: string
 }
 
+function WatermarkCanvas({ 
+  src, 
+  sessionId, 
+  visible, 
+  watermarkText 
+}: { 
+  src: string, 
+  sessionId: string, 
+  visible: boolean, 
+  watermarkText: string 
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!src || !visible) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const img = new Image()
+    img.crossOrigin = "anonymous" // Important for CORS if loading from external origin
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx.drawImage(img, 0, 0)
+      
+      // Watermark overlay
+      if (watermarkText && watermarkText !== 'disabled' && watermarkText !== '__disabled__') {
+        ctx.save()
+        ctx.globalAlpha = 0.35
+        ctx.fillStyle = "#ff3b5c" // GhostGallery accent2
+        ctx.font = `bold ${Math.max(14, img.width / 40)}px 'Space Mono', monospace`
+        ctx.textAlign = "center"
+        
+        const ts = new Date().toISOString()
+        const sid = sessionId ? sessionId.slice(0, 8).toUpperCase() : "UNKNOWN"
+        const lines = [`⚠ ${watermarkText.toUpperCase()} ⚠`, `Session: ${sid}`, ts]
+        
+        // Diagonal tiled watermarks
+        ctx.translate(canvas.width / 2, canvas.height / 2)
+        ctx.rotate(-Math.PI / 6)
+        const step = Math.max(160, img.width / 4)
+        
+        for (let x = -img.width; x < img.width; x += step) {
+          for (let y = -img.height; y < img.height; y += step) {
+            lines.forEach((line, i) => {
+              ctx.fillText(line, x, y + i * (Math.max(14, img.width / 40) + 4))
+            })
+          }
+        }
+        ctx.restore()
+      }
+      setLoaded(true)
+    }
+    img.src = src
+  }, [src, sessionId, visible, watermarkText])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "contain",
+        display: loaded && visible ? "block" : "none",
+      }}
+    />
+  )
+}
+
 export function ImageViewer({ token }: ImageViewerProps) {
+  const [state, setState] = useState<"loading" | "active" | "used" | "expired" | "invalid">("loading")
   const [gallery, setGallery] = useState<GalleryData | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [sessionId, setSessionId] = useState<string>("UNKNOWN")
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const [isBlurred, setIsBlurred] = useState(false)
+  const [timeLeft, setTimeLeft] = useState<number | null>(null)
+  const [lightbox, setLightbox] = useState<number | null>(null)
+  const [blurred, setBlurred] = useState(false)
+  const accessedRef = useRef(false)
 
   // Validate token and load gallery
   useEffect(() => {
+    if (accessedRef.current) return
+    accessedRef.current = true
+
     const validateToken = async () => {
       try {
+        const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === 'true'
+
         const response = await fetch('/api/validate-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ token, preview: isPreview }),
         })
 
         const data = await response.json()
 
         if (!response.ok || !data.valid) {
-          setError(data.error || 'Invalid or expired link')
+          if (data.error?.includes('already been used')) {
+            setState("used")
+          } else if (data.error?.includes('expired')) {
+            setState("expired")
+          } else {
+            setState("invalid")
+          }
           return
         }
 
         setGallery(data.gallery)
         setExpiresAt(data.expiresAt)
+        if (data.sessionId) setSessionId(data.sessionId)
+        setState("active")
       } catch (err) {
-        setError('Failed to load gallery')
         console.error('Validation error:', err)
-      } finally {
-        setLoading(false)
+        setState("invalid")
       }
     }
 
-    validateToken()
+    // Add a small delay for the "decrypting" effect
+    setTimeout(() => {
+      validateToken()
+    }, 1200)
   }, [token])
+
+  // Countdown timer
+  useEffect(() => {
+    if (!expiresAt || state !== "active") return
+
+    const tick = () => {
+      const now = Date.now()
+      const expiry = new Date(expiresAt).getTime()
+      const remaining = Math.max(0, expiry - now)
+
+      setTimeLeft(remaining)
+      if (remaining === 0) {
+        setState("expired")
+      }
+    }
+
+    tick()
+    const timer = setInterval(tick, 1000)
+    return () => clearInterval(timer)
+  }, [expiresAt, state])
 
   // Tab blur detection
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        setIsBlurred(true)
-      }
-    }
-
-    const handleBlur = () => {
-      setIsBlurred(true)
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('blur', handleBlur)
-
+    const handleVis = () => setBlurred(document.hidden)
+    const handleBlur = () => setBlurred(true)
+    const handleFocus = () => setBlurred(false)
+    
+    document.addEventListener("visibilitychange", handleVis)
+    window.addEventListener("blur", handleBlur)
+    window.addEventListener("focus", handleFocus)
+    
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('blur', handleBlur)
+      document.removeEventListener("visibilitychange", handleVis)
+      window.removeEventListener("blur", handleBlur)
+      window.removeEventListener("focus", handleFocus)
     }
   }, [])
 
-  // Keyboard navigation
+  // Disable context menu and shortcuts
+  useEffect(() => {
+    const prevent = (e: MouseEvent) => e.preventDefault()
+    const preventShortcuts = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'S' || e.key === 'P')) {
+        e.preventDefault()
+      }
+      if (e.key === 'PrintScreen') {
+        e.preventDefault()
+      }
+    }
+    document.addEventListener("contextmenu", prevent)
+    document.addEventListener("keydown", preventShortcuts)
+    return () => {
+      document.removeEventListener("contextmenu", prevent)
+      document.removeEventListener("keydown", preventShortcuts)
+    }
+  }, [])
+
+  // Keyboard navigation for lightbox
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedIndex === null || !gallery) return
+      if (lightbox === null || !gallery) return
 
       if (e.key === 'Escape') {
-        setSelectedIndex(null)
+        setLightbox(null)
       } else if (e.key === 'ArrowRight') {
-        setSelectedIndex((selectedIndex + 1) % gallery.images.length)
+        setLightbox((lightbox + 1) % gallery.images.length)
       } else if (e.key === 'ArrowLeft') {
-        setSelectedIndex((selectedIndex - 1 + gallery.images.length) % gallery.images.length)
+        setLightbox((lightbox - 1 + gallery.images.length) % gallery.images.length)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedIndex, gallery])
-
-  // Context menu prevention
-  useEffect(() => {
-    const preventContextMenu = (e: MouseEvent) => {
-      e.preventDefault()
-    }
-
-    // Prevent keyboard shortcuts for save/print
-    const preventShortcuts = (e: KeyboardEvent) => {
-      // Prevent Ctrl+S, Ctrl+P, Ctrl+Shift+S
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'S' || e.key === 'P')) {
-        e.preventDefault()
-      }
-      // Prevent PrintScreen
-      if (e.key === 'PrintScreen') {
-        e.preventDefault()
-      }
-    }
-
-    document.addEventListener('contextmenu', preventContextMenu)
-    document.addEventListener('keydown', preventShortcuts)
-    return () => {
-      document.removeEventListener('contextmenu', preventContextMenu)
-      document.removeEventListener('keydown', preventShortcuts)
-    }
-  }, [])
+  }, [lightbox, gallery])
 
   const getImageUrl = useCallback((pathname: string) => {
     return `/api/image?pathname=${encodeURIComponent(pathname)}&token=${encodeURIComponent(token)}`
   }, [token])
 
-  const openLightbox = (index: number) => {
-    setSelectedIndex(index)
+  const formatTime = (ms: number) => {
+    const s = Math.floor(ms / 1000)
+    const m = Math.floor(s / 60)
+    const h = Math.floor(m / 60)
+    const d = Math.floor(h / 24)
+    if (d > 0) return `${d}d ${h % 24}h ${m % 60}m`
+    if (h > 0) return `${h}h ${m % 60}m`
+    if (m > 0) return `${m}m ${s % 60}s`
+    return `${s}s`
   }
 
-  const closeLightbox = () => {
-    setSelectedIndex(null)
-  }
-
-  const goNext = () => {
-    if (gallery && selectedIndex !== null) {
-      setSelectedIndex((selectedIndex + 1) % gallery.images.length)
-    }
-  }
-
-  const goPrev = () => {
-    if (gallery && selectedIndex !== null) {
-      setSelectedIndex((selectedIndex - 1 + gallery.images.length) % gallery.images.length)
-    }
-  }
-
-  if (loading) {
+  if (state === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground">Validating access...</p>
-        </div>
+      <div className="status-screen loading-screen">
+        <div className="status-spinner"></div>
+        <p>Verifying secure link<span className="dots">...</span></p>
       </div>
     )
   }
 
-  if (error) {
+  if (state === "used") {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="max-w-md text-center space-y-4">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-destructive/10">
-            <AlertCircle className="size-8 text-destructive" />
-          </div>
-          <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-muted-foreground">{error}</p>
-          <p className="text-sm text-muted-foreground">
-            This link may have expired, been used by another device, or is invalid.
-          </p>
-        </div>
+      <div className="status-screen error-screen">
+        <div className="status-icon used-icon">🔒</div>
+        <h2>Link Already Used</h2>
+        <p>This secure link has already been accessed once and is now invalid.</p>
+        <p className="sub-hint">Each GhostGallery link can only be viewed a single time.</p>
       </div>
     )
   }
 
-  if (!gallery) return null
+  if (state === "expired") {
+    return (
+      <div className="status-screen error-screen">
+        <div className="status-icon">⌛</div>
+        <h2>Link Expired</h2>
+        <p>This link has passed its expiry time and is no longer accessible.</p>
+      </div>
+    )
+  }
 
-  const timeUntilExpiry = expiresAt ? new Date(expiresAt).getTime() - Date.now() : 0
-  const minutesUntilExpiry = Math.max(0, Math.round(timeUntilExpiry / (1000 * 60)))
+  if (state === "invalid" || !gallery) {
+    return (
+      <div className="status-screen error-screen">
+        <div className="status-icon">⚠</div>
+        <h2>Invalid Link</h2>
+        <p>This token does not exist or was never issued.</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen pb-8">
+    <div className={`gallery-viewer ${blurred ? "blurred" : ""} secure-image-container`}>
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Shield className="size-5 text-muted-foreground" />
-            <div>
-              <h1 className="font-semibold">{gallery.title}</h1>
-              <p className="text-xs text-muted-foreground">
-                {gallery.images.length} image{gallery.images.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="size-4" />
-            <span>
-              {minutesUntilExpiry > 60 
-                ? `${Math.round(minutesUntilExpiry / 60)}h remaining`
-                : `${minutesUntilExpiry}m remaining`
-              }
+      <div className="viewer-header">
+        <span className="viewer-logo">⬡ GHOSTGALLERY</span>
+        <div className="viewer-meta">
+          <span className="session-badge">Session: {sessionId.slice(0, 8).toUpperCase()}</span>
+          {timeLeft !== null && (
+            <span className={`timer-badge ${timeLeft < 60000 ? "urgent" : ""}`}>
+              ⏱ {formatTime(timeLeft)}
             </span>
-          </div>
+          )}
         </div>
-      </header>
+      </div>
 
-      {/* Blur overlay when tab loses focus */}
-      {isBlurred && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-xl">
-          <div className="text-center space-y-4 p-8">
-            <AlertCircle className="mx-auto size-12 text-muted-foreground" />
-            <h2 className="text-xl font-semibold">Session Paused</h2>
-            <p className="text-muted-foreground max-w-sm">
-              You navigated away from this page. Click below to continue viewing.
-            </p>
-            <Button onClick={() => setIsBlurred(false)}>
-              Continue Viewing
-            </Button>
+      {/* Warning Banner */}
+      <div className="viewer-warning">
+        ⚠ ONE-TIME ACCESS — This session is recorded. All images are watermarked with your session ID and timestamp.
+      </div>
+
+      {/* Blur Overlay */}
+      {blurred && (
+        <div className="blur-overlay">
+          <div className="blur-message">
+            <span className="blur-icon">🔒</span>
+            <p>Content hidden</p>
+            <p className="blur-sub">Return to this tab to continue viewing</p>
           </div>
         </div>
       )}
 
-      {/* Image Grid */}
-      <main className="mx-auto max-w-7xl px-4 py-6 secure-image-container">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {gallery.images.map((image, index) => (
-            <button
-              key={image.id}
-              onClick={() => openLightbox(index)}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            >
-              {/* Image with watermark */}
-              <div className="relative size-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={getImageUrl(image.pathname)}
-                  alt={image.filename}
-                  className="size-full object-cover transition-transform group-hover:scale-105"
-                  draggable={false}
-                  onDragStart={(e) => e.preventDefault()}
-                />
-                {/* Watermark overlay */}
-                <div 
-                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                  style={{ userSelect: 'none' }}
-                >
-                  <span 
-                    className="rotate-[-30deg] text-white/20 font-bold text-lg whitespace-nowrap select-none"
-                    style={{ 
-                      textShadow: '0 0 2px rgba(0,0,0,0.3)',
-                      WebkitUserSelect: 'none',
-                      MozUserSelect: 'none',
-                      msUserSelect: 'none',
-                    }}
-                  >
-                    {gallery.watermarkText}
-                  </span>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </main>
-
-      {/* Lightbox */}
-      {selectedIndex !== null && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
-          onClick={closeLightbox}
-        >
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4 text-white hover:bg-white/10"
-            onClick={closeLightbox}
+      {/* Gallery Grid */}
+      <div className="gallery-grid">
+        {gallery.images.map((img, idx) => (
+          <div
+            key={img.id}
+            className="gallery-item"
+            onClick={() => setLightbox(idx)}
+            style={{ animationDelay: `${idx * 0.08}s` }}
           >
-            <X className="size-6" />
-            <span className="sr-only">Close</span>
-          </Button>
-
-          {/* Navigation buttons */}
-          {gallery.images.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10"
-                onClick={(e) => { e.stopPropagation(); goPrev() }}
-              >
-                <ChevronLeft className="size-8" />
-                <span className="sr-only">Previous</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10"
-                onClick={(e) => { e.stopPropagation(); goNext() }}
-              >
-                <ChevronRight className="size-8" />
-                <span className="sr-only">Next</span>
-              </Button>
-            </>
-          )}
-
-          {/* Image with watermark */}
-          <div 
-            className="relative max-h-[90vh] max-w-[90vw] secure-image-container"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getImageUrl(gallery.images[selectedIndex].pathname)}
-              alt={gallery.images[selectedIndex].filename}
-              className="max-h-[90vh] max-w-[90vw] object-contain"
-              draggable={false}
-              onDragStart={(e) => e.preventDefault()}
-            />
-            {/* Fullscreen watermark overlay */}
-            <div 
-              className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
-              style={{ userSelect: 'none' }}
-            >
-              {/* Multiple watermarks in a grid pattern */}
-              <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-center">
-                    <span 
-                      className="rotate-[-30deg] text-white/15 font-bold text-xl whitespace-nowrap select-none"
-                      style={{ 
-                        textShadow: '0 0 4px rgba(0,0,0,0.5)',
-                        WebkitUserSelect: 'none',
-                        MozUserSelect: 'none',
-                        msUserSelect: 'none',
-                      }}
-                    >
-                      {gallery.watermarkText}
-                    </span>
-                  </div>
-                ))}
+            <div className="gallery-img-wrap">
+              <WatermarkCanvas 
+                src={getImageUrl(img.pathname)} 
+                sessionId={sessionId} 
+                visible={!blurred} 
+                watermarkText={gallery.watermarkText}
+              />
+              <div className="img-overlay">
+                <span>⬡ View</span>
               </div>
             </div>
           </div>
+        ))}
+      </div>
 
-          {/* Image counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-white/70">
-            {selectedIndex + 1} / {gallery.images.length}
+      {/* Lightbox */}
+      {lightbox !== null && (
+        <div className="lightbox" onClick={() => setLightbox(null)}>
+          <button className="lightbox-close" onClick={() => setLightbox(null)}>×</button>
+          
+          {gallery.images.length > 1 && (
+            <>
+              <button
+                className="lightbox-nav prev"
+                onClick={(e) => { e.stopPropagation(); setLightbox((lightbox - 1 + gallery.images.length) % gallery.images.length) }}
+              >‹</button>
+              <button
+                className="lightbox-nav next"
+                onClick={(e) => { e.stopPropagation(); setLightbox((lightbox + 1) % gallery.images.length) }}
+              >›</button>
+            </>
+          )}
+
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <WatermarkCanvas
+              src={getImageUrl(gallery.images[lightbox].pathname)}
+              sessionId={sessionId}
+              visible={!blurred}
+              watermarkText={gallery.watermarkText}
+            />
           </div>
+          
+          <div className="lightbox-counter">{lightbox + 1} / {gallery.images.length}</div>
         </div>
       )}
     </div>

@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Space_Mono, Bebas_Neue, DM_Sans } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const spaceMono = Space_Mono({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-mono' })
+const bebasNeue = Bebas_Neue({ subsets: ['latin'], weight: ['400'], variable: '--font-display' })
+const dmSans = DM_Sans({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-body' })
 
 export const metadata: Metadata = {
-  title: 'SecureShare - Private Photo Sharing',
+  title: 'GhostGallery - Secure One-Time Delivery',
   description: 'Share photos securely with time-limited, one-time access links',
   generator: 'v0.app',
   icons: {
@@ -35,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
+    <html lang="en" className={`${spaceMono.variable} ${bebasNeue.variable} ${dmSans.variable} bg-background`}>
       <body className="font-sans antialiased min-h-screen">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

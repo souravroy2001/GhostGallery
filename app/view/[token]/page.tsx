@@ -11,6 +11,6 @@ export default async function ViewPage({ params }: ViewPageProps) {
 }
 
 export const metadata = {
-  title: 'View Shared Photos - SecureShare',
+  title: 'View Shared Photos - GhostGallery',
   description: 'Secure photo viewing with time-limited access',
 }

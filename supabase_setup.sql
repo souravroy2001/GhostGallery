@@ -1,4 +1,4 @@
--- SQL Setup for SecureShare
+-- SQL Setup for GhostGallery
 
 -- 1. Create galleries table
 CREATE TABLE IF NOT EXISTS galleries (

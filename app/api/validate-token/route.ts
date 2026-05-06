@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid'
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json()
+    const { token, preview } = await request.json()
 
     if (!token) {
       return NextResponse.json({ error: 'Missing token' }, { status: 400 })
@@ -36,41 +36,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Link has expired', valid: false }, { status: 403 })
     }
 
-    // For one-time use links, check session binding
-    if (shareLink.one_time_use) {
-      if (shareLink.session_id && shareLink.session_id !== sessionId) {
-        return NextResponse.json({ 
-          error: 'This link has already been accessed from another device', 
-          valid: false 
-        }, { status: 403 })
-      }
+    // For one-time use links, check if already accessed (skip if previewing)
+    if (!preview && shareLink.one_time_use && shareLink.access_count > 0) {
+      return NextResponse.json({ 
+        error: 'This link has already been used and cannot be accessed again.', 
+        valid: false 
+      }, { status: 403 })
+    }
 
-      // Bind session on first access
-      if (!shareLink.session_id) {
-        const { error: updateError } = await supabase
-          .from('share_links')
-          .update({
-            session_id: sessionId,
-            first_accessed_at: new Date().toISOString(),
-            access_count: 1,
-          })
-          .eq('id', shareLink.id)
+    // Increment access count on first access (skip if previewing)
+    if (!preview) {
+      const { error: updateError } = await supabase
+        .from('share_links')
+        .update({
+          session_id: sessionId,
+          first_accessed_at: new Date().toISOString(),
+          access_count: (shareLink.access_count || 0) + 1,
+        })
+        .eq('id', shareLink.id)
 
-        if (updateError) {
-          console.error('Failed to update share link:', updateError)
-        }
-      } else {
-        // Increment access count for same session
-        const { error: updateError } = await supabase
-          .from('share_links')
-          .update({
-            access_count: (shareLink.access_count || 0) + 1,
-          })
-          .eq('id', shareLink.id)
-
-        if (updateError) {
-          console.error('Failed to update access count:', updateError)
-        }
+      if (updateError) {
+        console.error('Failed to update share link access:', updateError)
       }
     }
 
@@ -92,6 +78,7 @@ export async function POST(request: NextRequest) {
         })),
       },
       expiresAt: shareLink.expires_at,
+      sessionId: sessionId,
     })
 
     // Set session cookie

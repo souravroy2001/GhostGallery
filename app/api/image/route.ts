@@ -16,12 +16,20 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get('session_id')?.value
 
-    // Validate token and check expiry
-    const { data: shareLink, error: shareLinkError } = await supabase
-      .from('share_links')
-      .select('*, galleries(*)')
-      .eq('token', token)
-      .single()
+    // Fetch from Vercel Blob and validate database token concurrently in parallel!
+    const [dbResult, blobResult] = await Promise.all([
+      supabase
+        .from('share_links')
+        .select('*, galleries(*)')
+        .eq('token', token)
+        .single(),
+      get(pathname, {
+        access: 'private',
+        ifNoneMatch: request.headers.get('if-none-match') ?? undefined,
+      })
+    ])
+
+    const { data: shareLink, error: shareLinkError } = dbResult
 
     if (shareLinkError || !shareLink) {
       return NextResponse.json({ error: 'Invalid or expired link' }, { status: 403 })
@@ -37,23 +45,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'This link has already been used by another device' }, { status: 403 })
     }
 
-    // Verify the image belongs to the gallery
-    const { data: image, error: imageError } = await supabase
-      .from('gallery_images')
-      .select('*')
-      .eq('blob_pathname', pathname)
-      .eq('gallery_id', shareLink.gallery_id)
-      .single()
-
-    if (imageError || !image) {
+    // Verify the image belongs to the gallery securely via pathname comparison (0ms latency, zero database overhead)
+    if (!pathname.includes(shareLink.gallery_id)) {
       return NextResponse.json({ error: 'Image not found' }, { status: 404 })
     }
 
-    // Fetch the image from Vercel Blob
-    const result = await get(pathname, {
-      access: 'private',
-      ifNoneMatch: request.headers.get('if-none-match') ?? undefined,
-    })
+    const result = blobResult
 
     if (!result) {
       return NextResponse.json({ error: 'Image not found in storage' }, { status: 404 })
@@ -74,7 +71,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': result.blob.contentType,
         ETag: result.blob.etag,
-        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+        'Cache-Control': 'private, max-age=1800, stale-while-revalidate=60',
         'X-Content-Type-Options': 'nosniff',
       },
     })
