@@ -23,6 +23,64 @@ const EXPIRY_OPTIONS = [
   { label: "7 days", hours: 168 },
 ]
 
+const compressImage = (file: File): Promise<File> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      return resolve(file);
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1080;
+        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+          if (width > height) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          } else {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(file);
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          0.82
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export function UploadForm() {
   const [files, setFiles] = useState<FileWithPreview[]>([])
   const [expiryHours, setExpiryHours] = useState<number>(EXPIRY_OPTIONS[3].hours)
@@ -76,7 +134,17 @@ export function UploadForm() {
 
     try {
       const formData = new FormData()
-      files.forEach(file => formData.append('files', file))
+      
+      // Compress each image on-the-fly before appending to FormData to prevent 413 (Content Too Large) errors on Vercel
+      for (const file of files) {
+        try {
+          const compressed = await compressImage(file)
+          formData.append('files', compressed)
+        } catch (compressErr) {
+          console.warn('Compression failed, appending original:', compressErr)
+          formData.append('files', file)
+        }
+      }
       formData.append('title', 'Ghost Gallery') // Default title for now
       formData.append('watermarkText', watermarkEnabled ? watermarkText : 'disabled')
       formData.append('expiryHours', expiryHours.toString())
