@@ -40,8 +40,8 @@ const compressImage = (file: File): Promise<File> => {
       let width = img.width;
       let height = img.height;
 
-      const MAX_WIDTH = 1600;
-      const MAX_HEIGHT = 1600;
+      const MAX_WIDTH = 1200;
+      const MAX_HEIGHT = 1200;
       if (width > MAX_WIDTH || height > MAX_HEIGHT) {
         if (width > height) {
           height = Math.round((height * MAX_WIDTH) / width);
@@ -73,7 +73,7 @@ const compressImage = (file: File): Promise<File> => {
           resolve(compressedFile);
         },
         'image/jpeg',
-        0.75
+        0.65
       );
     };
     img.onerror = () => {
@@ -258,10 +258,19 @@ export function UploadForm() {
         body: formData,
       })
 
-      const data = await response.json()
+      if (response.status === 413) {
+        throw new Error('Total file size too large. Please select fewer photos.')
+      }
+
+      let data;
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        throw new Error(`Server responded with an unexpected format (Status: ${response.status}). You might be uploading too many photos at once.`)
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Upload failed')
+        throw new Error(data?.error || 'Upload failed')
       }
 
       setShareResult({
