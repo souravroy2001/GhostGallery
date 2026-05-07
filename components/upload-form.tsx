@@ -89,6 +89,7 @@ export function UploadForm() {
   const [expiryHours, setExpiryHours] = useState<number>(EXPIRY_OPTIONS[3].hours)
   const [dragging, setDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [shareResult, setShareResult] = useState<ShareResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [watermarkEnabled, setWatermarkEnabled] = useState(true)
@@ -236,11 +237,16 @@ export function UploadForm() {
     }
 
     setIsUploading(true)
+    setUploadProgress(0)
     setError(null)
 
     try {
-      // 1. Upload files directly to Vercel Blob from the browser
-      const uploadPromises = files.map(async (file) => {
+      // 1. Upload files directly to Vercel Blob from the browser sequentially
+      const uploadedImages = [];
+      let uploadedCount = 0;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         let fileToUpload = file;
         try {
           fileToUpload = await compressImage(file);
@@ -257,16 +263,17 @@ export function UploadForm() {
           handleUploadUrl: '/api/upload/blob',
         });
 
-        return {
+        uploadedImages.push({
           url: blob.url,
           pathname: blob.pathname,
           size: fileToUpload.size,
           contentType: blob.contentType || fileToUpload.type,
           filename: fileToUpload.name
-        };
-      });
+        });
 
-      const uploadedImages = await Promise.all(uploadPromises);
+        uploadedCount++;
+        setUploadProgress(uploadedCount);
+      }
 
       // 2. Submit metadata to API to create database records
       const payload = {
@@ -842,7 +849,12 @@ export function UploadForm() {
             type="button"
           >
             {isUploading ? (
-              <span className="spinner-text">Encrypting & generating link<span className="dots">...</span></span>
+              <span className="spinner-text">
+                {uploadProgress < files.length 
+                  ? `Processing ${uploadProgress + 1} of ${files.length}` 
+                  : 'Finalizing gallery'}
+                <span className="dots">...</span>
+              </span>
             ) : (
               <span>Generate Secure Link → {files.length > 0 && `(${files.length} photo${files.length > 1 ? "s" : ""})`}</span>
             )}
