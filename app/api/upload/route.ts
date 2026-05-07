@@ -67,9 +67,8 @@ export async function POST(request: NextRequest) {
     }
     console.log(`Gallery created with ID: ${gallery.id}`);
 
-    // Upload files to Vercel Blob
-    const uploadedImages = []
-    for (const file of files) {
+    // Upload files to Vercel Blob in parallel to prevent 504 Gateway Timeout on Hobby plan
+    const uploadPromises = files.map(async (file) => {
       console.log(`Uploading file to Vercel Blob: ${file.name}...`);
       const uniqueId = nanoid()
       const extension = file.name.split('.').pop() || 'jpg'
@@ -97,15 +96,18 @@ export async function POST(request: NextRequest) {
 
         if (imageError) {
           console.error('Image record error:', imageError)
-          continue
+          return null;
         }
 
-        uploadedImages.push(imageData)
+        return imageData;
       } catch (blobError) {
         console.error(`Vercel Blob upload error for ${file.name}:`, blobError);
-        continue;
+        return null;
       }
-    }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const uploadedImages = results.filter(img => img !== null);
 
     if (uploadedImages.length === 0) {
       console.error('No images were successfully uploaded');
