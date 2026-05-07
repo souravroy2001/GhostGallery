@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const blob = await put(pathname, buffer, {
-          access: 'public',
+          access: 'private',
           token: sanitizedToken,
           contentType: file.type || 'image/jpeg',
         })
