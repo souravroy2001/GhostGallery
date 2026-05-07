@@ -30,6 +30,8 @@ export const metadata: Metadata = {
   },
 }
 
+import { Toaster } from '@/components/ui/toaster'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,6 +41,7 @@ export default function RootLayout({
     <html lang="en" className={`${spaceMono.variable} ${bebasNeue.variable} ${dmSans.variable} bg-background`} suppressHydrationWarning>
       <body className="font-sans antialiased min-h-screen" suppressHydrationWarning>
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>

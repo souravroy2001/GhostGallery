@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useToast } from '@/hooks/use-toast'
 import { ShareLinkDisplay } from '@/components/share-link-display'
 import { Lock, Droplet, Clock, Link2Off, Key, Copy, Check, Eye, Trash2, Plus, ShieldCheck, AlertOctagon, RefreshCw, Loader2, Layers, Link2 } from 'lucide-react'
 import { upload } from '@vercel/blob/client'
@@ -85,6 +86,7 @@ const compressImage = (file: File): Promise<File> => {
 };
 
 export function UploadForm() {
+  const { toast } = useToast()
   const [files, setFiles] = useState<FileWithPreview[]>([])
   const [expiryHours, setExpiryHours] = useState<number>(EXPIRY_OPTIONS[3].hours)
   const [dragging, setDragging] = useState(false)
@@ -399,14 +401,25 @@ export function UploadForm() {
             const filtered = saved.filter((g: any) => g.id !== galleryId)
             localStorage.setItem('ghost_galleries', JSON.stringify(filtered))
             setMyGalleries(prev => prev.filter(g => g.id !== galleryId))
-            showCustomAlert('GALLERY DELETED', 'The gallery and all associated assets have been permanently deleted.', 'success')
+            toast({
+              title: 'Gallery Deleted',
+              description: 'The gallery and all associated assets have been permanently deleted.'
+            })
           } else {
             const data = await res.json()
-            showCustomAlert('DELETION FAILED', data.error || 'Failed to delete gallery.', 'danger')
+            toast({
+              title: 'Deletion Failed',
+              description: data.error || 'Failed to delete gallery.',
+              variant: 'destructive'
+            })
           }
         } catch (err) {
           console.error(err)
-          showCustomAlert('DELETION FAILED', 'Failed to delete gallery.', 'danger')
+          toast({
+            title: 'Deletion Failed',
+            description: 'Failed to delete gallery.',
+            variant: 'destructive'
+          })
         } finally {
           setDeletingGalleryId(null)
         }
@@ -425,14 +438,25 @@ export function UploadForm() {
           const res = await fetch(`/api/gallery?token=${token}&shortToken=${shortToken}`, { method: 'DELETE' })
           if (res.ok) {
             fetchMyGalleries()
-            showCustomAlert('LINK REVOKED', 'The share link has been successfully revoked and invalidated.', 'success')
+            toast({
+              title: 'Link Revoked',
+              description: 'The share link has been successfully revoked and invalidated.'
+            })
           } else {
             const data = await res.json()
-            showCustomAlert('REVOCATION FAILED', data.error || 'Failed to revoke link.', 'danger')
+            toast({
+              title: 'Revocation Failed',
+              description: data.error || 'Failed to revoke link.',
+              variant: 'destructive'
+            })
           }
         } catch (err) {
           console.error(err)
-          showCustomAlert('REVOCATION FAILED', 'Failed to revoke link.', 'danger')
+          toast({
+            title: 'Revocation Failed',
+            description: 'Failed to revoke link.',
+            variant: 'destructive'
+          })
         }
       }
     )
@@ -455,13 +479,24 @@ export function UploadForm() {
       if (res.ok) {
         setNewLinkResult(data.shareLink)
         fetchMyGalleries() // Refresh live links list
-        showCustomAlert('LINK GENERATED', 'A secure new share link has been generated successfully.', 'success')
+        toast({
+          title: 'Link Generated',
+          description: 'A secure new share link has been generated successfully.'
+        })
       } else {
-        showCustomAlert('GENERATION FAILED', data.error || 'Failed to generate link.', 'danger')
+        toast({
+          title: 'Generation Failed',
+          description: data.error || 'Failed to generate link.',
+          variant: 'destructive'
+        })
       }
     } catch (err) {
       console.error(err)
-      showCustomAlert('GENERATION FAILED', 'Failed to generate link.', 'danger')
+      toast({
+        title: 'Generation Failed',
+        description: 'Failed to generate link.',
+        variant: 'destructive'
+      })
     } finally {
       setNewLinkLoading(false)
     }
