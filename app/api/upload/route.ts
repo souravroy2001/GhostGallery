@@ -33,10 +33,14 @@ export async function POST(request: NextRequest) {
 
       const sanitizedToken = process.env.BLOB_READ_WRITE_TOKEN.replace(/^["']|["']$/g, '')
 
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
       try {
-        const blob = await put(pathname, file, {
+        const blob = await put(pathname, buffer, {
           access: 'public',
           token: sanitizedToken,
+          contentType: file.type || 'image/jpeg',
         })
         return NextResponse.json({
           url: blob.url,
