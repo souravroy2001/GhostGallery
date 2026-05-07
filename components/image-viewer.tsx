@@ -41,7 +41,7 @@ function WatermarkCanvas({
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const img = new Image()
+    const img = new window.Image()
     img.crossOrigin = "anonymous" // Important for CORS if loading from external origin
     img.onload = () => {
       canvas.width = img.width
@@ -100,12 +100,11 @@ export function ImageViewer({ token }: ImageViewerProps) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [lightbox, setLightbox] = useState<number | null>(null)
   const [blurred, setBlurred] = useState(false)
-  const accessedRef = useRef(false)
+  const [showReloadModal, setShowReloadModal] = useState(false)
 
   // Validate token and load gallery
   useEffect(() => {
-    if (accessedRef.current) return
-    accessedRef.current = true
+    let active = true
 
     const validateToken = async () => {
       try {
@@ -118,6 +117,8 @@ export function ImageViewer({ token }: ImageViewerProps) {
         })
 
         const data = await response.json()
+
+        if (!active) return
 
         if (!response.ok || !data.valid) {
           if (data.error?.includes('already been used')) {
@@ -135,15 +136,21 @@ export function ImageViewer({ token }: ImageViewerProps) {
         if (data.sessionId) setSessionId(data.sessionId)
         setState("active")
       } catch (err) {
+        if (!active) return
         console.error('Validation error:', err)
         setState("invalid")
       }
     }
 
     // Add a small delay for the "decrypting" effect
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       validateToken()
     }, 1200)
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
   }, [token])
 
   // Countdown timer
@@ -165,6 +172,37 @@ export function ImageViewer({ token }: ImageViewerProps) {
     const timer = setInterval(tick, 1000)
     return () => clearInterval(timer)
   }, [expiresAt, state])
+
+  // Single-use link reload warning confirmation
+  useEffect(() => {
+    if (state !== "active") return
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const message = "Warning: This is a secure single-use gallery. If you reload or close this page, you will lose access forever!"
+      e.preventDefault()
+      e.returnValue = message
+      return message
+    }
+
+    // Intercept desktop mouse exiting the top of the screen (Exit Intent detection for reload/close buttons)
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY < 50) {
+        setShowReloadModal(true)
+      }
+    }
+
+    // Natively prevent mobile pull-down refresh on iOS Safari and Android Chrome
+    document.body.style.overscrollBehaviorY = 'contain'
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    document.addEventListener("mouseleave", handleMouseLeave)
+    
+    return () => {
+      document.body.style.overscrollBehaviorY = 'auto'
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+      document.removeEventListener("mouseleave", handleMouseLeave)
+    }
+  }, [state])
 
   // Tab blur detection
   useEffect(() => {
@@ -192,6 +230,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
       }
       if (e.key === 'PrintScreen') {
         e.preventDefault()
+      }
+      if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
+        e.preventDefault()
+        setShowReloadModal(true)
       }
     }
     document.addEventListener("contextmenu", prevent)
@@ -619,6 +661,140 @@ export function ImageViewer({ token }: ImageViewerProps) {
               letterSpacing: '0.1em'
             }}>
               {lightbox + 1} / {gallery.images.length}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Cyber Security Reload Modal */}
+      {showReloadModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(3, 7, 10, 0.85)',
+          backdropFilter: 'blur(16px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fade-in 0.3s ease both'
+        }}>
+          <div style={{
+            background: 'rgba(10, 16, 22, 0.95)',
+            border: '2px solid var(--accent2)',
+            boxShadow: '0 0 35px rgba(255, 59, 92, 0.25)',
+            borderRadius: '16px',
+            padding: '40px 32px',
+            maxWidth: '440px',
+            width: '90%',
+            textAlign: 'center',
+            animation: 'pop-glow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              background: 'rgba(255, 59, 92, 0.08)',
+              border: '2px solid var(--accent2)',
+              color: 'var(--accent2)',
+              boxShadow: '0 0 20px rgba(255, 59, 92, 0.2)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px auto'
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: 'var(--accent2)',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              display: 'inline-block',
+              marginBottom: '8px'
+            }}>
+              [ SECURE WARNING ]
+            </span>
+            <h3 style={{
+              fontSize: '24px',
+              color: 'var(--text)',
+              marginBottom: '12px',
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '0.05em'
+            }}>Confirm Reload?</h3>
+            
+            <p style={{
+              color: 'var(--text-muted)',
+              fontSize: '14px',
+              lineHeight: '1.6',
+              marginBottom: '28px'
+            }}>
+              This is a secure **single-use** gallery. If you reload or close this page, this cryptographic token will be **destroyed permanently** and you will lose access forever!
+            </p>
+
+            <div style={{
+              display: 'flex',
+              gap: '16px'
+            }}>
+              <button
+                onClick={() => setShowReloadModal(false)}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text)',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.borderColor = 'var(--text-muted)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                }}
+              >
+                CANCEL (STAY)
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  flex: 1,
+                  background: 'var(--accent2)',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(255, 59, 92, 0.3)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.filter = 'brightness(1.1)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 59, 92, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = 'none';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 59, 92, 0.3)';
+                }}
+              >
+                CONFIRM RELOAD
+              </button>
             </div>
           </div>
         </div>
