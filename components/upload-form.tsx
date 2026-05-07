@@ -276,9 +276,8 @@ export function UploadForm() {
 
         const formData = new FormData();
         formData.append('file', fileToUpload);
-        formData.append('galleryId', galleryId);
 
-        const uploadResponse = await fetch('/api/upload', {
+        const uploadResponse = await fetch(`/api/upload?galleryId=${galleryId}`, {
           method: 'POST',
           body: formData,
         });

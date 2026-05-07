@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData()
+      const galleryId = request.nextUrl.searchParams.get('galleryId')
       const file = formData.get('file') as File | null
-      const galleryId = formData.get('galleryId') as string | null
 
       if (!file) {
         return NextResponse.json({ error: 'No file provided' }, { status: 400 })
