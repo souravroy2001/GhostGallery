@@ -31,9 +31,12 @@ export async function POST(request: NextRequest) {
       const extension = file.name.split('.').pop() || 'jpg'
       const pathname = `galleries/temp/${uniqueId}.${extension}`
 
+      const sanitizedToken = process.env.BLOB_READ_WRITE_TOKEN.replace(/^["']|["']$/g, '')
+
       try {
         const blob = await put(pathname, file, {
           access: 'public',
+          token: sanitizedToken,
         })
         return NextResponse.json({
           url: blob.url,
@@ -44,7 +47,10 @@ export async function POST(request: NextRequest) {
         })
       } catch (blobError) {
         console.error('Server side Vercel Blob upload error:', blobError)
-        return NextResponse.json({ error: 'Failed to upload image to storage' }, { status: 500 })
+        return NextResponse.json({ 
+          error: 'Failed to upload image to storage',
+          details: blobError instanceof Error ? blobError.message : String(blobError)
+        }, { status: 500 })
       }
     }
 
