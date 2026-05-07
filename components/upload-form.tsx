@@ -254,22 +254,27 @@ export function UploadForm() {
           console.warn('Compression failed, using original:', compressErr);
         }
 
-        const extension = fileToUpload.name.split('.').pop() || 'jpg';
-        const uniqueFilename = `${Math.random().toString(36).substring(2, 11)}_${Date.now()}.${extension}`;
-        
-        // Vercel Blob client upload bypasses server limits completely
-        const blob = await upload(uniqueFilename, fileToUpload, {
-          access: 'public',
-          handleUploadUrl: '/api/upload/blob',
-          contentType: fileToUpload.type || 'image/jpeg',
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
         });
+
+        if (!uploadResponse.ok) {
+          const errData = await uploadResponse.json().catch(() => ({}));
+          throw new Error(errData.error || `Upload failed for photo ${i + 1}`);
+        }
+
+        const blob = await uploadResponse.json();
 
         uploadedImages.push({
           url: blob.url,
           pathname: blob.pathname,
-          size: fileToUpload.size,
-          contentType: blob.contentType || fileToUpload.type,
-          filename: fileToUpload.name
+          size: blob.size,
+          contentType: blob.contentType,
+          filename: blob.filename
         });
 
         uploadedCount++;

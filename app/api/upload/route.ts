@@ -16,6 +16,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error: Blob token missing' }, { status: 500 });
     }
 
+    const contentType = request.headers.get('content-type') || ''
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      const file = formData.get('file') as File | null
+
+      if (!file) {
+        return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+      }
+
+      console.log(`Server uploading single file to Vercel Blob: ${file.name}`)
+      const uniqueId = nanoid()
+      const extension = file.name.split('.').pop() || 'jpg'
+      const pathname = `galleries/temp/${uniqueId}.${extension}`
+
+      try {
+        const blob = await put(pathname, file, {
+          access: 'public',
+        })
+        return NextResponse.json({
+          url: blob.url,
+          pathname: blob.pathname,
+          size: file.size,
+          contentType: file.type || 'image/jpeg',
+          filename: file.name
+        })
+      } catch (blobError) {
+        console.error('Server side Vercel Blob upload error:', blobError)
+        return NextResponse.json({ error: 'Failed to upload image to storage' }, { status: 500 })
+      }
+    }
+
+    // JSON Gallery Creation Mode
     const body = await request.json()
     const { title, watermarkText, expiryHours, images } = body
 
