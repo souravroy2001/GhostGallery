@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ShareLinkDisplay } from '@/components/share-link-display'
 import { Lock, Droplet, Clock, Link2Off, Key, Copy, Check, Eye, Trash2, Plus, ShieldCheck, AlertOctagon, RefreshCw, Loader2, Layers, Link2 } from 'lucide-react'
+import { upload } from '@vercel/blob/client'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
 
 interface FileWithPreview extends File {
@@ -40,8 +41,8 @@ const compressImage = (file: File): Promise<File> => {
       let width = img.width;
       let height = img.height;
 
-      const MAX_WIDTH = 1200;
-      const MAX_HEIGHT = 1200;
+      const MAX_WIDTH = 1920;
+      const MAX_HEIGHT = 1080;
       if (width > MAX_WIDTH || height > MAX_HEIGHT) {
         if (width > height) {
           height = Math.round((height * MAX_WIDTH) / width);
@@ -73,7 +74,7 @@ const compressImage = (file: File): Promise<File> => {
           resolve(compressedFile);
         },
         'image/jpeg',
-        0.65
+        0.82
       );
     };
     img.onerror = () => {
@@ -238,24 +239,49 @@ export function UploadForm() {
     setError(null)
 
     try {
-      const formData = new FormData()
-      
-      for (const file of files) {
+      // 1. Upload files directly to Vercel Blob from the browser
+      const uploadPromises = files.map(async (file) => {
+        let fileToUpload = file;
         try {
-          const compressed = await compressImage(file)
-          formData.append('files', compressed)
+          fileToUpload = await compressImage(file);
         } catch (compressErr) {
-          console.warn('Compression failed, appending original:', compressErr)
-          formData.append('files', file)
+          console.warn('Compression failed, using original:', compressErr);
         }
-      }
-      formData.append('title', galleryTitle)
-      formData.append('watermarkText', watermarkEnabled ? watermarkText : 'disabled')
-      formData.append('expiryHours', expiryHours.toString())
+
+        const extension = fileToUpload.name.split('.').pop() || 'jpg';
+        const uniqueFilename = `${Math.random().toString(36).substring(2, 11)}_${Date.now()}.${extension}`;
+        
+        // Vercel Blob client upload bypasses server limits completely
+        const blob = await upload(uniqueFilename, fileToUpload, {
+          access: 'public',
+          handleUploadUrl: '/api/upload/blob',
+        });
+
+        return {
+          url: blob.url,
+          pathname: blob.pathname,
+          size: fileToUpload.size,
+          contentType: blob.contentType || fileToUpload.type,
+          filename: fileToUpload.name
+        };
+      });
+
+      const uploadedImages = await Promise.all(uploadPromises);
+
+      // 2. Submit metadata to API to create database records
+      const payload = {
+        title: galleryTitle,
+        watermarkText: watermarkEnabled ? watermarkText : 'disabled',
+        expiryHours: expiryHours,
+        images: uploadedImages
+      };
 
       const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload),
       })
 
       if (response.status === 413) {
@@ -266,7 +292,7 @@ export function UploadForm() {
       try {
         data = await response.json()
       } catch (jsonError) {
-        throw new Error(`Server responded with an unexpected format (Status: ${response.status}). You might be uploading too many photos at once.`)
+        throw new Error(`Server responded with an unexpected format (Status: ${response.status}).`)
       }
 
       if (!response.ok) {
