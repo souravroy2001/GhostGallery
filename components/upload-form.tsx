@@ -247,7 +247,7 @@ export function UploadForm() {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        let fileToUpload = file;
+        let fileToUpload: File = file;
         try {
           fileToUpload = await compressImage(file);
         } catch (compressErr) {
@@ -261,6 +261,7 @@ export function UploadForm() {
         const blob = await upload(uniqueFilename, fileToUpload, {
           access: 'public',
           handleUploadUrl: '/api/upload/blob',
+          contentType: fileToUpload.type || 'image/jpeg',
         });
 
         uploadedImages.push({

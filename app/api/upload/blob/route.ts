@@ -8,10 +8,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         return {
           maximumSizeInBytes: 50 * 1024 * 1024,
-          tokenPayload: JSON.stringify({}),
+          tokenPayload: JSON.stringify({
+            userId: 'anonymous'
+          }),
         }
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
