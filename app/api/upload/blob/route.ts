@@ -10,7 +10,17 @@ export async function POST(request: Request): Promise<NextResponse> {
       request,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         return {
-          allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+          // Allow larger files in case compression is bypassed (e.g., up to 50MB)
+          maximumSizeInBytes: 50 * 1024 * 1024,
+          allowedContentTypes: [
+            'image/jpeg', 
+            'image/png', 
+            'image/gif', 
+            'image/webp',
+            'image/heic',
+            'image/heif',
+            'application/octet-stream' // Sometimes HEIC or unknown files from iOS get mapped to octet-stream
+          ],
           tokenPayload: JSON.stringify({
             // any metadata if needed
           }),
