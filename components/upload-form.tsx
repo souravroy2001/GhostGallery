@@ -241,7 +241,27 @@ export function UploadForm() {
     setError(null)
 
     try {
-      // 1. Upload files directly to Vercel Blob from the browser sequentially
+      // 1. Initialize empty gallery to get a valid database Gallery ID
+      const initResponse = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'init',
+          title: galleryTitle,
+          watermarkText: watermarkEnabled ? watermarkText : 'disabled',
+        })
+      });
+
+      if (!initResponse.ok) {
+        const initErr = await initResponse.json().catch(() => ({}));
+        throw new Error(initErr.error || 'Failed to initialize gallery');
+      }
+
+      const { galleryId } = await initResponse.json();
+
+      // 2. Upload files directly into the gallery's directory sequentially
       const uploadedImages = [];
       let uploadedCount = 0;
 
@@ -256,6 +276,7 @@ export function UploadForm() {
 
         const formData = new FormData();
         formData.append('file', fileToUpload);
+        formData.append('galleryId', galleryId);
 
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
@@ -281,36 +302,26 @@ export function UploadForm() {
         setUploadProgress(uploadedCount);
       }
 
-      // 2. Submit metadata to API to create database records
-      const payload = {
-        title: galleryTitle,
-        watermarkText: watermarkEnabled ? watermarkText : 'disabled',
-        expiryHours: expiryHours,
-        images: uploadedImages
-      };
-
-      const response = await fetch('/api/upload', {
+      // 3. Finalize the gallery by creating secure share links and image records
+      const finalizeResponse = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          action: 'finalize',
+          galleryId,
+          expiryHours,
+          images: uploadedImages,
+        }),
       })
 
-      if (response.status === 413) {
-        throw new Error('Total file size too large. Please select fewer photos.')
+      if (!finalizeResponse.ok) {
+        const finalizeErr = await finalizeResponse.json().catch(() => ({}));
+        throw new Error(finalizeErr.error || 'Failed to finalize gallery');
       }
 
-      let data;
-      try {
-        data = await response.json()
-      } catch (jsonError) {
-        throw new Error(`Server responded with an unexpected format (Status: ${response.status}).`)
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.error || 'Upload failed')
-      }
+      const data = await finalizeResponse.json();
 
       setShareResult({
         url: data.shareLink.url,
