@@ -123,6 +123,11 @@ export function UploadForm() {
   const [newLinkLoading, setNewLinkLoading] = useState(false)
   const [newLinkResult, setNewLinkResult] = useState<any | null>(null)
 
+  // Add More Images States
+  const addMoreFileInputRef = useRef<HTMLInputElement>(null)
+  const [addingToGalleryId, setAddingToGalleryId] = useState<string | null>(null)
+  const [isAddingMore, setIsAddingMore] = useState(false)
+
   // Custom dialog modal states
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogConfig, setDialogConfig] = useState<{
@@ -205,6 +210,14 @@ export function UploadForm() {
   const processFiles = (newFiles: FileList | null) => {
     if (!newFiles) return
     const validFiles = Array.from(newFiles).filter(f => f.type.startsWith('image/'))
+
+    const currentTotalSize = files.reduce((acc, f) => acc + f.size, 0)
+    const newTotalSize = validFiles.reduce((acc, f) => acc + f.size, 0)
+
+    if (currentTotalSize + newTotalSize > 50 * 1024 * 1024) {
+      showCustomAlert('FILE SIZE LIMIT', 'The total size of the images in a single batch cannot exceed 50MB. Please select fewer images.', 'warning')
+      return
+    }
 
     validFiles.forEach(file => {
       const preview = URL.createObjectURL(file)
@@ -348,6 +361,91 @@ export function UploadForm() {
       setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  const handleAddMoreFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = e.target.files
+    if (!newFiles || !addingToGalleryId) return
+    
+    const validFiles = Array.from(newFiles).filter(f => f.type.startsWith('image/'))
+    const totalSize = validFiles.reduce((acc, f) => acc + f.size, 0)
+    
+    if (totalSize > 50 * 1024 * 1024) {
+      showCustomAlert('FILE SIZE LIMIT', 'You can only add up to 50MB in a single batch. Please select fewer images.', 'warning')
+      setAddingToGalleryId(null)
+      if (addMoreFileInputRef.current) addMoreFileInputRef.current.value = ''
+      return
+    }
+
+    setIsAddingMore(true)
+    try {
+      const uploadedImages = [];
+      let uploadedCount = 0;
+
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        let fileToUpload: File = file;
+        try {
+          fileToUpload = await compressImage(file);
+        } catch (compressErr) {
+          console.warn('Compression failed, using original:', compressErr);
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+
+        const uploadResponse = await fetch(`/api/upload?galleryId=${addingToGalleryId}`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+           const errData = await uploadResponse.json().catch(() => ({}));
+           throw new Error(errData.error || `Upload failed for photo ${i + 1}`);
+        }
+
+        const blob = await uploadResponse.json();
+
+        uploadedImages.push({
+          url: blob.url,
+          pathname: blob.pathname,
+          size: blob.size,
+          contentType: blob.contentType,
+          filename: blob.filename
+        });
+      }
+
+      const addResponse = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add_images',
+          galleryId: addingToGalleryId,
+          images: uploadedImages,
+        }),
+      })
+
+      if (!addResponse.ok) {
+        const addErr = await addResponse.json().catch(() => ({}));
+        throw new Error(addErr.error || 'Failed to finalize adding images');
+      }
+
+      toast({
+         title: 'Images Added',
+         description: `Successfully added ${uploadedImages.length} images to the gallery.`
+      })
+      fetchMyGalleries()
+    } catch (err) {
+       toast({
+         title: 'Upload Failed',
+         description: err instanceof Error ? err.message : 'Upload failed',
+         variant: 'destructive'
+       })
+    } finally {
+       setIsAddingMore(false)
+       setAddingToGalleryId(null)
+       if (addMoreFileInputRef.current) addMoreFileInputRef.current.value = ''
     }
   }
 
@@ -1233,29 +1331,57 @@ export function UploadForm() {
                             </button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => { setGeneratingLinkFor(gal.id); setNewLinkResult(null); }}
-                            style={{
-                              background: 'transparent',
-                              border: '1px dashed var(--border)',
-                              width: '100%',
-                              padding: '12px',
-                              borderRadius: '4px',
-                              color: 'var(--text-muted)',
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              transition: 'all 0.15s'
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-                          >
-                            <Plus size={14} /> Create New Share Link
-                          </button>
+                          <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                            <button
+                              onClick={() => { setGeneratingLinkFor(gal.id); setNewLinkResult(null); }}
+                              style={{
+                                background: 'transparent',
+                                border: '1px dashed var(--border)',
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '4px',
+                                color: 'var(--text-muted)',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                transition: 'all 0.15s'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                            >
+                              <Plus size={14} /> Create New Share Link
+                            </button>
+                            <button
+                              onClick={() => { setAddingToGalleryId(gal.id); addMoreFileInputRef.current?.click(); }}
+                              disabled={isAddingMore}
+                              style={{
+                                background: 'transparent',
+                                border: '1px dashed var(--border)',
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '4px',
+                                color: 'var(--text-muted)',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '12px',
+                                cursor: isAddingMore ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                transition: 'all 0.15s',
+                                opacity: isAddingMore && addingToGalleryId === gal.id ? 0.7 : 1
+                              }}
+                              onMouseEnter={(e) => { if(!isAddingMore){ e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; } }}
+                              onMouseLeave={(e) => { if(!isAddingMore){ e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
+                            >
+                              {isAddingMore && addingToGalleryId === gal.id ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                              {isAddingMore && addingToGalleryId === gal.id ? 'Adding...' : 'Add More Images'}
+                            </button>
+                          </div>
                         )}
                       </div>
                     </>
@@ -1264,6 +1390,14 @@ export function UploadForm() {
               ))}
             </div>
           )}
+          <input
+            ref={addMoreFileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleAddMoreFiles}
+          />
         </div>
       )}
 

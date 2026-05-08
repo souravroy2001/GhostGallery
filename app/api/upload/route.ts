@@ -87,6 +87,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, galleryId: gallery.id })
     }
 
+    if (action === 'add_images') {
+      console.log(`Adding images to gallery ${galleryId} with ${images?.length} images`);
+
+      if (!images || images.length === 0) {
+        return NextResponse.json({ error: 'No images provided for addition' }, { status: 400 })
+      }
+
+      const uploadedImages = []
+      for (const image of images) {
+        console.log(`Storing image metadata in Supabase: ${image.filename}...`);
+        const { data: imageData, error: imageError } = await supabase
+          .from('gallery_images')
+          .insert({
+            gallery_id: galleryId,
+            blob_pathname: image.pathname,
+            original_filename: image.filename,
+            content_type: image.contentType,
+            size_bytes: image.size,
+          })
+          .select()
+          .single()
+
+        if (imageError) {
+          console.error('Image record error:', imageError)
+          continue
+        }
+        uploadedImages.push(imageData)
+      }
+
+      if (uploadedImages.length === 0) {
+        console.error('No images were successfully stored');
+        return NextResponse.json({ error: 'Failed to store image metadata' }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        gallery: {
+          id: galleryId,
+          addedCount: uploadedImages.length,
+        }
+      })
+    }
+
     if (action === 'finalize') {
       console.log(`Finalizing gallery ${galleryId} with ${images?.length} images`);
 
