@@ -207,7 +207,7 @@ export function UploadForm() {
     }
   }, [user, activeTab])
 
-  const processFiles = (newFiles: FileList | null) => {
+  const processFiles = async (newFiles: FileList | null) => {
     if (!newFiles) return
     const validFiles = Array.from(newFiles).filter(f => f.type.startsWith('image/'))
 
@@ -219,14 +219,18 @@ export function UploadForm() {
       return
     }
 
-    validFiles.forEach(file => {
-      const preview = URL.createObjectURL(file)
-      const fileWithPreview = Object.assign(file, {
+    // Capture files into memory immediately to prevent iOS Safari permission revocation
+    const bufferedFiles = await Promise.all(validFiles.map(async (file) => {
+      const buffer = await file.arrayBuffer()
+      const safeFile = new File([buffer], file.name, { type: file.type || 'image/jpeg', lastModified: file.lastModified })
+      const preview = URL.createObjectURL(safeFile)
+      return Object.assign(safeFile, {
         preview,
         id: Math.random().toString(36).substring(7)
       })
-      setFiles(prev => [...prev, fileWithPreview])
-    })
+    }))
+
+    setFiles(prev => [...prev, ...bufferedFiles])
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -382,11 +386,17 @@ export function UploadForm() {
 
     setIsAddingMore(true)
     try {
+      // Capture files into memory immediately to prevent iOS Safari permission revocation
+      const bufferedFiles = await Promise.all(validFiles.map(async (f) => {
+        const buffer = await f.arrayBuffer()
+        return new File([buffer], f.name, { type: f.type || 'image/jpeg', lastModified: f.lastModified })
+      }))
+
       const uploadedImages = [];
       let uploadedCount = 0;
 
-      for (let i = 0; i < validFiles.length; i++) {
-        const file = validFiles[i];
+      for (let i = 0; i < bufferedFiles.length; i++) {
+        const file = bufferedFiles[i];
         let fileToUpload: File = file;
         try {
           fileToUpload = await compressImage(file);
