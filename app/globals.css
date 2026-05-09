@@ -860,6 +860,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .viewer-logo {
@@ -871,8 +873,9 @@
 
 .viewer-meta {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .session-badge {
@@ -883,6 +886,7 @@
   border: 1px solid var(--border);
   padding: 4px 10px;
   border-radius: 2px;
+  white-space: nowrap;
 }
 
 .timer-badge {
@@ -894,6 +898,7 @@
   padding: 4px 10px;
   border-radius: 2px;
   transition: all 0.3s;
+  white-space: nowrap;
 }
 
 .timer-badge.urgent {
@@ -1069,11 +1074,15 @@
   justify-content: center;
 }
 
-.lightbox-content canvas,
-.lightbox-content img {
-  max-width: 90vw !important;
-  max-height: 80vh !important;
-  object-fit: contain !important;
+.lightbox-image {
+  width: auto;
+  height: auto;
+  max-width: 95vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 229, 255, 0.05);
 }
 
 .lightbox-close {

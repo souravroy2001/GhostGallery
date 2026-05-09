@@ -25,13 +25,15 @@ function WatermarkCanvas({
   sessionId,
   visible,
   watermarkText,
-  objectFit = "contain"
+  objectFit = "contain",
+  className
 }: {
   src: string,
   sessionId: string,
   visible: boolean,
   watermarkText: string,
-  objectFit?: "contain" | "cover"
+  objectFit?: "contain" | "cover",
+  className?: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [loaded, setLoaded] = useState(false)
@@ -84,9 +86,10 @@ function WatermarkCanvas({
   return (
     <canvas
       ref={canvasRef}
+      className={className}
       style={{
-        width: "100%",
-        height: "100%",
+        width: className ? undefined : "100%",
+        height: className ? undefined : "100%",
         objectFit,
         display: loaded && visible ? "block" : "none",
       }}
@@ -198,7 +201,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
 
     window.addEventListener("beforeunload", handleBeforeUnload)
     document.addEventListener("mouseleave", handleMouseLeave)
-    
+
     return () => {
       document.body.style.overscrollBehaviorY = 'auto'
       window.removeEventListener("beforeunload", handleBeforeUnload)
@@ -477,7 +480,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
       <div className="viewer-header">
         <span className="viewer-logo">⬡ {gallery?.title?.toUpperCase() || 'GHOST GALLERY'}</span>
         <div className="viewer-meta">
-          <span className="session-badge">Session: {sessionId.slice(0, 8).toUpperCase()}</span>
+          <span className="session-badge hidden sm:block">Session: {sessionId.slice(0, 8).toUpperCase()}</span>
           {timeLeft !== null && (
             <span className={`timer-badge ${timeLeft < 60000 ? "urgent" : ""}`}>
               ⏱ {formatTime(timeLeft)}
@@ -503,7 +506,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
         textTransform: 'uppercase'
       }}>
         <AlertTriangle size={14} style={{ color: '#f59e0b' }} />
-        <span>ONE-TIME ACCESS ONLY — This session is securely logged. All images are dynamically watermarked.</span>
+        <span>{`ONE-TIME ACCESS ONLY — This session is securely logged. ${gallery.watermarkText && gallery.watermarkText !== 'disabled' ? 'All images are dynamically watermarked.' : ''}`}</span>
       </div>
 
       {/* Blur Overlay */}
@@ -580,7 +583,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
                   color: 'var(--text)',
                   letterSpacing: '0.05em'
                 }}>
-                  {gallery.title || 'GHOST GALLERY'} - PHOTO {idx + 1}
+                  {gallery.title || 'GHOST GALLERY'}
                 </span>
                 <span style={{
                   display: 'flex',
@@ -623,6 +626,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
               visible={!blurred}
               watermarkText={gallery.watermarkText}
               objectFit="contain"
+              className="lightbox-image"
             />
           </div>
 
@@ -649,7 +653,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
               borderRadius: '20px',
               backdropFilter: 'blur(8px)'
             }}>
-              {gallery.title || 'GHOST GALLERY'} - PHOTO {lightbox + 1}
+              {gallery.title || 'GHOST GALLERY'}
             </span>
             <div style={{
               fontFamily: 'var(--font-mono)',
@@ -725,7 +729,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
               fontFamily: 'var(--font-display)',
               letterSpacing: '0.05em'
             }}>Confirm Reload?</h3>
-            
+
             <p style={{
               color: 'var(--text-muted)',
               fontSize: '14px',
