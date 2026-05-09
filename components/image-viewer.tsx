@@ -13,6 +13,7 @@ interface GalleryData {
   id: string
   title: string
   watermarkText: string
+  targetUrl: string | null
   images: GalleryImage[]
 }
 
@@ -106,54 +107,46 @@ export function ImageViewer({ token }: ImageViewerProps) {
   const [showReloadModal, setShowReloadModal] = useState(false)
 
   // Validate token and load gallery
-  useEffect(() => {
-    let active = true
+  const loadGallery = useCallback(async () => {
+    try {
+      const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === 'true'
 
-    const validateToken = async () => {
-      try {
-        const isPreview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === 'true'
+      const response = await fetch('/api/validate-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, preview: isPreview }),
+      })
 
-        const response = await fetch('/api/validate-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, preview: isPreview }),
-        })
+      const data = await response.json()
 
-        const data = await response.json()
-
-        if (!active) return
-
-        if (!response.ok || !data.valid) {
-          if (data.error?.includes('already been used')) {
-            setState("used")
-          } else if (data.error?.includes('expired')) {
-            setState("expired")
-          } else {
-            setState("invalid")
-          }
-          return
+      if (!response.ok || !data.valid) {
+        if (data.error?.includes('already been used')) {
+          setState("used")
+        } else if (data.error?.includes('expired')) {
+          setState("expired")
+        } else {
+          setState("invalid")
         }
-
-        setGallery(data.gallery)
-        setExpiresAt(data.expiresAt)
-        if (data.sessionId) setSessionId(data.sessionId)
-        setState("active")
-      } catch (err) {
-        if (!active) return
-        console.error('Validation error:', err)
-        setState("invalid")
+        return
       }
-    }
 
-    const timer = setTimeout(() => {
-      validateToken()
-    }, 1200)
-
-    return () => {
-      active = false
-      clearTimeout(timer)
+      setGallery(data.gallery)
+      setExpiresAt(data.expiresAt)
+      if (data.sessionId) setSessionId(data.sessionId)
+      setState("active")
+    } catch (err) {
+      console.error('Validation error:', err)
+      setState("invalid")
     }
   }, [token])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadGallery()
+    }, 1200)
+
+    return () => clearTimeout(timer)
+  }, [loadGallery])
 
   // Countdown timer
   useEffect(() => {
@@ -731,6 +724,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
     )
   }
 
+
   /* ─── ACTIVE GALLERY VIEW ──────────────────────────── */
   return (
     <>
@@ -769,7 +763,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
           <span>
             One-time access only — This session is securely logged.
             {gallery.watermarkText && gallery.watermarkText !== 'disabled'
-              ? ' All images carry dynamic watermarks.'
+              ? ' All views carry dynamic protection.'
               : ''}
           </span>
         </div>
@@ -787,8 +781,37 @@ export function ImageViewer({ token }: ImageViewerProps) {
           </div>
         )}
 
-        {/* ── Gallery grid ── */}
-        <div className="iv-grid">
+        {/* ── Gallery grid / Proxy Website ── */}
+        {gallery.targetUrl ? (
+          <div style={{ width: '100%', height: 'calc(100vh - 86px)', position: 'relative', background: '#020609' }}>
+            {/* Dynamic Watermark Overlay (Transparent grid) */}
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, overflow: 'hidden' }}>
+              {gallery.watermarkText && gallery.watermarkText !== 'disabled' && gallery.watermarkText !== '__disabled__' && (
+                <div style={{ 
+                  width: '100%', height: '100%', display: 'flex', flexWrap: 'wrap', gap: '120px', 
+                  alignContent: 'center', justifyContent: 'center', opacity: 0.12, transform: 'rotate(-25deg) scale(1.4)' 
+                }}>
+                  {Array.from({ length: 48 }).map((_, i) => (
+                    <div key={i} style={{ 
+                      fontFamily: 'var(--font-mono), monospace', fontSize: '13px', fontWeight: 700, 
+                      color: '#00e5ff', whiteSpace: 'nowrap', userSelect: 'none' 
+                    }}>
+                      ⚠ {gallery.watermarkText.toUpperCase()} ⚠ {sessionId.slice(0, 8).toUpperCase()}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Target IFrame */}
+            <iframe 
+              src={gallery.targetUrl}
+              style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+              title={gallery.title || 'Secure Link'}
+            />
+          </div>
+        ) : (
+          <div className="iv-grid">
           {gallery.images.map((img, idx) => (
             <div
               key={img.id}
@@ -812,6 +835,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
             </div>
           ))}
         </div>
+        )}
 
         {/* ── Lightbox ── */}
         {lightbox !== null && (

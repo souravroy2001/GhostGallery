@@ -31,21 +31,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid link', valid: false }, { status: 403 })
     }
 
+    // Check if current user is the gallery creator
+    const { data: { user } } = await supabase.auth.getUser()
+    const createdGalleriesCookie = cookieStore.get('created_galleries')?.value || ''
+    const createdGalleries = createdGalleriesCookie ? createdGalleriesCookie.split(',') : []
+    const isOwnerByAuth = user && shareLink.galleries.user_id === user.id
+    const isOwnerByCookie = createdGalleries.includes(shareLink.galleries.id)
+    const isCreator = !!(isOwnerByAuth || isOwnerByCookie)
+
     // Verify preview permission (only the creator can use preview=true)
-    let isPreview = preview
-    if (isPreview) {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      const createdGalleriesCookie = cookieStore.get('created_galleries')?.value || ''
-      const createdGalleries = createdGalleriesCookie ? createdGalleriesCookie.split(',') : []
-      
-      const isOwnerByAuth = user && shareLink.galleries.user_id === user.id
-      const isOwnerByCookie = createdGalleries.includes(shareLink.galleries.id)
-      
-      if (!isOwnerByAuth && !isOwnerByCookie) {
-        isPreview = false
-      }
-    }
+    let isPreview = preview && isCreator
 
     // Check if link has expired (allow creator preview regardless)
     if (!isPreview && new Date(shareLink.expires_at) < new Date()) {
@@ -83,7 +78,8 @@ export async function POST(request: NextRequest) {
         id: shareLink.galleries.id,
         title: shareLink.galleries.title,
         watermarkText: shareLink.galleries.watermark_text,
-        images: shareLink.galleries.gallery_images.map((img: {
+        targetUrl: shareLink.galleries.target_url || null,
+        images: (shareLink.galleries.gallery_images || []).map((img: {
           id: string
           blob_pathname: string
           original_filename: string

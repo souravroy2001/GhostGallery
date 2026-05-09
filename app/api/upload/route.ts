@@ -79,9 +79,94 @@ export async function POST(request: NextRequest) {
 
     // JSON Gallery Modes (Init and Finalize)
     const body = await request.json()
-    const { action, title, watermarkText, expiryHours, galleryId, images } = body
+    const { action, title, watermarkText, expiryHours, galleryId, images, targetUrl } = body
 
     const supabase = await createClient()
+
+    if (action === 'create_url') {
+      console.log('Creating secure URL share...');
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      const { data: gallery, error: galleryError } = await supabase
+        .from('galleries')
+        .insert({
+          title: title || 'Secure Link',
+          watermark_text: watermarkText || 'Confidential',
+          user_id: user?.id || null,
+          target_url: targetUrl,
+        })
+        .select()
+        .single()
+
+      if (galleryError) {
+        console.error('Gallery URL initialization error:', galleryError)
+        return NextResponse.json({ error: `Failed to create secure link: ${galleryError.message}` }, { status: 500 })
+      }
+
+      // Create long secure share link
+      const longToken = nanoid(32)
+      const expiresAt = new Date(Date.now() + (expiryHours || 24) * 60 * 60 * 1000)
+
+      const { data: shareLink, error: shareLinkError } = await supabase
+        .from('share_links')
+        .insert({
+          gallery_id: gallery.id,
+          token: longToken,
+          expires_at: expiresAt.toISOString(),
+          one_time_use: true,
+        })
+        .select()
+        .single()
+
+      if (shareLinkError) {
+        console.error('Share link creation error:', shareLinkError)
+        return NextResponse.json({ error: `Failed to create share link: ${shareLinkError.message}` }, { status: 500 })
+      }
+
+      // Create short redirect link
+      const shortCode = nanoid(6)
+      await supabase
+        .from('share_links')
+        .insert({
+          gallery_id: gallery.id,
+          token: shortCode,
+          expires_at: expiresAt.toISOString(),
+          one_time_use: false,
+        })
+
+      const shareUrl = `${request.nextUrl.origin}/view/${longToken}`
+      const shortenedUrl = `${request.nextUrl.origin}/s/${shortCode}`
+
+      const response = NextResponse.json({
+        success: true,
+        gallery: {
+          id: gallery.id,
+          title: gallery.title,
+        },
+        shareLink: {
+          url: shortenedUrl,
+          originalUrl: shareUrl,
+          token: longToken,
+          expiresAt: expiresAt.toISOString(),
+        },
+      })
+
+      // Set cookie for ownership tracking
+      const cookieStore = await cookies()
+      const existing = cookieStore.get('created_galleries')?.value || ''
+      const galleriesList = existing ? existing.split(',') : []
+      if (!galleriesList.includes(gallery.id)) {
+        galleriesList.push(gallery.id)
+      }
+      response.cookies.set('created_galleries', galleriesList.join(','), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      })
+
+      return response
+    }
 
     if (action === 'init') {
       console.log('Initializing empty gallery in Supabase...');

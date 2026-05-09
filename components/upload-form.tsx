@@ -68,6 +68,8 @@ export function UploadForm() {
   const [watermarkEnabled, setWatermarkEnabled] = useState(true)
   const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL')
   const [galleryTitle, setGalleryTitle] = useState('Ghost Gallery')
+  const [createType, setCreateType] = useState<'photos' | 'links'>('photos')
+  const [targetUrl, setTargetUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   /* Auth states */
@@ -186,9 +188,38 @@ export function UploadForm() {
 
   /* ── Upload ── */
   const handleGenerate = async () => {
-    if (!files.length) { setError('Please select at least one image'); return }
+    if (createType === 'links' && !targetUrl) {
+      setError('Please provide a website or link destination')
+      return
+    }
+    if (createType === 'photos' && !files.length) {
+      setError('Please select at least one image')
+      return
+    }
+
     setIsUploading(true); setUploadProgress(0); setError(null)
     try {
+      if (createType === 'links') {
+        const initRes = await fetch('/api/upload', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            action: 'create_url', 
+            title: galleryTitle, 
+            watermarkText: watermarkEnabled ? watermarkText : 'disabled',
+            expiryHours,
+            targetUrl
+          })
+        })
+        if (!initRes.ok) throw new Error((await initRes.json().catch(() => ({}))).error || 'Link creation failed')
+        const data = await initRes.json()
+        setShareResult({ url: data.shareLink.url, expiresAt: data.shareLink.expiresAt, originalUrl: data.shareLink.originalUrl })
+        
+        // Reset states
+        setTargetUrl('')
+        setGalleryPassword('')
+        return
+      }
+
       const initRes = await fetch('/api/upload', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'init', title: galleryTitle, watermarkText: watermarkEnabled ? watermarkText : 'disabled' })
@@ -712,81 +743,124 @@ export function UploadForm() {
           {activeTab === 'create' ? (
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }} className="gg-animate-up">
 
-              {/* Drop zone */}
-              <div
-                className={`gg-dropzone${dragging ? ' drag-over' : ''}`}
-                style={{ minHeight: files.length ? 'auto' : 200 }}
-                onDragOver={e => { e.preventDefault(); setDragging(true) }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={async e => { 
-                  e.preventDefault(); 
-                  setDragging(false); 
-                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    processFiles(e.dataTransfer.files) 
-                  } else {
-                    const html = e.dataTransfer.getData('text/html')
-                    const url = e.dataTransfer.getData('URL') || e.dataTransfer.getData('text/uri-list')
-                    let imgSrc = url
-                    if (html) {
-                       const match = html.match(/src\s*=\s*"([^"]+)"/)
-                       if (match) imgSrc = match[1]
+              {/* Subtabs for Photos vs Links */}
+              <div style={{ display: 'flex', gap: 6, width: '100%', background: 'rgba(255,255,255,.03)', padding: 4, borderRadius: 10, border: '1px solid rgba(255,255,255,.05)' }}>
+                <button 
+                  onClick={() => { setCreateType('photos'); setError(null) }}
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', border: 'none',
+                    fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, letterSpacing: '.05em', transition: 'all .2s',
+                    background: createType === 'photos' ? 'rgba(0,229,255,.08)' : 'transparent',
+                    color: createType === 'photos' ? '#00e5ff' : 'rgba(136,146,164,.6)',
+                    borderBottom: createType === 'photos' ? '1px solid rgba(0,229,255,.3)' : '1px solid transparent'
+                  }}
+                  type="button"
+                >
+                  PHOTOS & IMAGES
+                </button>
+                <button 
+                  onClick={() => { setCreateType('links'); setError(null) }}
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', border: 'none',
+                    fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, letterSpacing: '.05em', transition: 'all .2s',
+                    background: createType === 'links' ? 'rgba(0,229,255,.08)' : 'transparent',
+                    color: createType === 'links' ? '#00e5ff' : 'rgba(136,146,164,.6)',
+                    borderBottom: createType === 'links' ? '1px solid rgba(0,229,255,.3)' : '1px solid transparent'
+                  }}
+                  type="button"
+                >
+                  SECURE WEBSITES & LINKS
+                </button>
+              </div>
+
+              {/* Drop zone / URL input */}
+              {createType === 'photos' ? (
+                <div
+                  className={`gg-dropzone${dragging ? ' drag-over' : ''}`}
+                  style={{ minHeight: files.length ? 'auto' : 200 }}
+                  onDragOver={e => { e.preventDefault(); setDragging(true) }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={async e => { 
+                    e.preventDefault(); 
+                    setDragging(false); 
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      processFiles(e.dataTransfer.files) 
+                    } else {
+                      const html = e.dataTransfer.getData('text/html')
+                      const url = e.dataTransfer.getData('URL') || e.dataTransfer.getData('text/uri-list')
+                      let imgSrc = url
+                      if (html) {
+                         const match = html.match(/src\s*=\s*"([^"]+)"/)
+                         if (match) imgSrc = match[1]
+                      }
+                      if (imgSrc) {
+                         try {
+                           toast({ title: 'Fetching image...', description: 'Downloading from external site' })
+                           const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(imgSrc)}`)
+                           if (!res.ok) throw new Error('Proxy failed')
+                           const blob = await res.blob()
+                           const file = new File([blob], "dragged-image.jpg", { type: blob.type || 'image/jpeg' })
+                           processFiles([file])
+                         } catch (err) {
+                           showCustomAlert('FETCH FAILED', 'Could not fetch the external image. Try saving it to your computer first.', 'danger')
+                         }
+                      }
                     }
-                    if (imgSrc) {
-                       try {
-                         toast({ title: 'Fetching image...', description: 'Downloading from external site' })
-                         const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(imgSrc)}`)
-                         if (!res.ok) throw new Error('Proxy failed')
-                         const blob = await res.blob()
-                         const file = new File([blob], "dragged-image.jpg", { type: blob.type || 'image/jpeg' })
-                         processFiles([file])
-                       } catch (err) {
-                         showCustomAlert('FETCH FAILED', 'Could not fetch the external image. Try saving it to your computer first.', 'danger')
-                       }
-                    }
-                  }
-                }}
-                onClick={() => !files.length && fileInputRef.current?.click()}
-              >
-                {files.length === 0 ? (
-                  <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, userSelect: 'none' }}>
-                    <div style={{ width: 52, height: 52, borderRadius: '50%', border: '1px solid rgba(0,229,255,.3)', background: 'rgba(0,229,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,229,255,.15)' }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'rgba(200,216,232,.8)', margin: '0 0 4px' }}>
-                        Drop images here or <span style={{ color: '#00e5ff', textDecoration: 'underline', cursor: 'pointer' }}>browse files</span>
-                      </p>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(136,146,164,.5)', margin: 0, letterSpacing: '.04em' }}>PNG · JPG · WEBP · Multiple files</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ padding: 16 }}>
-                    <div className="gg-scroll" style={{ display: 'flex', overflowX: 'auto', gap: 10, paddingBottom: 8 }}>
-                      {files.map(img => (
-                        <div key={img.id} className="gg-thumb" style={{ width: 90, flexShrink: 0 }}>
-                          <img src={img.preview} alt={img.name} />
-                          <button className="gg-remove" onClick={e => removeFile(e, img.id)}>×</button>
-                        </div>
-                      ))}
-                      <div onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }} style={{
-                        width: 90, flexShrink: 0,
-                        aspectRatio: '1', borderRadius: 8, border: '1px dashed rgba(0,229,255,.2)',
-                        background: 'rgba(0,229,255,.03)', display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer',
-                        color: 'rgba(136,146,164,.5)', fontSize: 11, fontFamily: 'var(--font-mono)', transition: 'all .15s',
-                      }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,229,255,.4)'; (e.currentTarget as HTMLDivElement).style.color = '#00e5ff' }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,229,255,.2)'; (e.currentTarget as HTMLDivElement).style.color = 'rgba(136,146,164,.5)' }}
-                      >
-                        <Plus size={18} /><span>Add</span>
+                  }}
+                  onClick={() => !files.length && fileInputRef.current?.click()}
+                >
+                  {files.length === 0 ? (
+                    <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, userSelect: 'none' }}>
+                      <div style={{ width: 52, height: 52, borderRadius: '50%', border: '1px solid rgba(0,229,255,.3)', background: 'rgba(0,229,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,229,255,.15)' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'rgba(200,216,232,.8)', margin: '0 0 4px' }}>
+                          Drop images here or <span style={{ color: '#00e5ff', textDecoration: 'underline', cursor: 'pointer' }}>browse files</span>
+                        </p>
+                        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(136,146,164,.5)', margin: 0, letterSpacing: '.04em' }}>PNG · JPG · WEBP · Multiple files</p>
                       </div>
                     </div>
+                  ) : (
+                    <div style={{ padding: 16 }}>
+                      <div className="gg-scroll" style={{ display: 'flex', overflowX: 'auto', gap: 10, paddingBottom: 8 }}>
+                        {files.map(img => (
+                          <div key={img.id} className="gg-thumb" style={{ width: 90, flexShrink: 0 }}>
+                            <img src={img.preview} alt={img.name} />
+                            <button className="gg-remove" onClick={e => removeFile(e, img.id)}>×</button>
+                          </div>
+                        ))}
+                        <div onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }} style={{
+                          width: 90,
+                          flexShrink: 0,
+                          aspectRatio: '1', borderRadius: 8, border: '1px dashed rgba(0,229,255,.2)',
+                          background: 'rgba(0,229,255,.03)', display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer',
+                          color: 'rgba(136,146,164,.5)', fontSize: 11, fontFamily: 'var(--font-mono)', transition: 'all .15s',
+                        }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,229,255,.4)'; (e.currentTarget as HTMLDivElement).style.color = '#00e5ff' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,229,255,.2)'; (e.currentTarget as HTMLDivElement).style.color = 'rgba(136,146,164,.5)' }}
+                        >
+                          <Plus size={18} /><span>Add</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <input ref={fileInputRef} type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={e => processFiles(e.target.files)} />
+                </div>
+              ) : (
+                <div className="gg-card gg-animate-up" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(136,146,164,.5)', letterSpacing: '.08em' }}>WEBSITE OR LINK DESTINATION</label>
+                    <input className="gg-input" type="url" value={targetUrl} onChange={e => { setTargetUrl(e.target.value); setError(null) }} placeholder="https://example.com/private/document" />
                   </div>
-                )}
-                <input ref={fileInputRef} type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={e => processFiles(e.target.files)} />
-              </div>
+                  <p style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(136,146,164,.4)', letterSpacing: '.03em' }}>
+                    <span style={{ color: 'rgba(0,229,255,.5)', marginRight: 6 }}>⬡</span>The destination URL will be hidden from the receiver using our reverse proxy wrapper.
+                  </p>
+                </div>
+              )}
 
               {/* Expiry */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -822,12 +896,13 @@ export function UploadForm() {
                 {/* Fields */}
                 <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(136,146,164,.5)', letterSpacing: '.08em' }}>GALLERY TITLE</label>
-                    <input className="gg-input" type="text" value={galleryTitle} onChange={e => setGalleryTitle(e.target.value)} placeholder="Ghost Gallery" />
+                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(136,146,164,.5)', letterSpacing: '.08em' }}>{createType === 'links' ? 'LINK TITLE' : 'GALLERY TITLE'}</label>
+                    <input className="gg-input" type="text" value={galleryTitle} onChange={e => setGalleryTitle(e.target.value)} placeholder={createType === 'links' ? 'Secure Link' : 'Ghost Gallery'} />
                   </div>
+
                   {watermarkEnabled && (
                     <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(136,146,164,.5)', letterSpacing: '.08em' }}>WATERMARK TEXT</label>
+                      <label style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgba(136,146,164,.5)', letterSpacing: '.08em' }}>WATERMARK OVERLAY</label>
                       <input className="gg-input" type="text" value={watermarkText} onChange={e => setWatermarkText(e.target.value)} placeholder="CONFIDENTIAL" maxLength={24} />
                     </div>
                   )}
@@ -861,15 +936,18 @@ export function UploadForm() {
 
               {/* Generate button */}
               <button
-                className={`gg-generate${files.length ? ' ready' : ' disabled'}${isUploading ? ' loading' : ''}`}
-                onClick={handleGenerate} disabled={!files.length || isUploading} type="button"
+                className={`gg-generate${(createType === 'photos' ? files.length : !!targetUrl) ? ' ready' : ' disabled'}${isUploading ? ' loading' : ''}`}
+                onClick={handleGenerate} disabled={!(createType === 'photos' ? files.length : !!targetUrl) || isUploading} type="button"
               >
                 {isUploading
                   ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                       <Loader2 size={15} style={{ animation: 'gg-spin 1s linear infinite' }} />
-                      {uploadProgress < files.length ? `Processing ${uploadProgress + 1} / ${files.length}` : 'Finalizing gallery…'}
+                      {createType === 'photos' 
+                        ? (uploadProgress < files.length ? `Processing ${uploadProgress + 1} / ${files.length}` : 'Finalizing gallery…')
+                        : 'Creating secure proxy link…'
+                      }
                     </span>
-                  : <span>Generate Secure Link {files.length > 0 && `— ${files.length} photo${files.length > 1 ? 's' : ''}`} →</span>
+                  : <span>Generate Secure Link {createType === 'photos' && files.length > 0 && `— ${files.length} photo${files.length > 1 ? 's' : ''}`} →</span>
                 }
               </button>
             </div>
