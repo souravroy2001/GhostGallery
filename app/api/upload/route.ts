@@ -18,39 +18,54 @@ export async function POST(request: NextRequest) {
 
     const contentType = request.headers.get('content-type') || ''
 
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData()
+    if (contentType.includes('multipart/form-data') || contentType.startsWith('image/')) {
+      let fileBuffer: Buffer;
+      let fileType: string;
+      let fileName: string;
       const galleryId = request.nextUrl.searchParams.get('galleryId')
-      const file = formData.get('file') as File | null
 
-      if (!file) {
-        return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-      }
       if (!galleryId) {
         return NextResponse.json({ error: 'No gallery ID provided' }, { status: 400 })
       }
 
-      console.log(`Server uploading single file to Vercel Blob for gallery ${galleryId}: ${file.name}`)
+      if (contentType.includes('multipart/form-data')) {
+        const formData = await request.formData()
+        const file = formData.get('file') as File | null
+
+        if (!file) {
+          return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+        }
+        
+        fileType = file.type || 'image/jpeg'
+        fileName = file.name || 'upload.jpg'
+        const arrayBuffer = await file.arrayBuffer()
+        fileBuffer = Buffer.from(arrayBuffer)
+      } else {
+        fileType = contentType
+        fileName = request.headers.get('x-file-name') ? decodeURIComponent(request.headers.get('x-file-name')!) : 'upload.jpg'
+        const arrayBuffer = await request.arrayBuffer()
+        fileBuffer = Buffer.from(arrayBuffer)
+      }
+
+      console.log(`Server uploading single file to Vercel Blob for gallery ${galleryId}: ${fileName}`)
       const uniqueId = nanoid()
-      const extension = file.name.split('.').pop() || 'jpg'
+      const extension = fileName.split('.').pop() || 'jpg'
       const pathname = `galleries/${galleryId}/${uniqueId}.${extension}`
 
       const sanitizedToken = process.env.BLOB_READ_WRITE_TOKEN.replace(/^["']|["']$/g, '')
-      const arrayBuffer = await file.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
 
       try {
-        const blob = await put(pathname, buffer, {
+        const blob = await put(pathname, fileBuffer, {
           access: 'private',
           token: sanitizedToken,
-          contentType: file.type || 'image/jpeg',
+          contentType: fileType,
         })
         return NextResponse.json({
           url: blob.url,
           pathname: blob.pathname,
-          size: file.size,
-          contentType: file.type || 'image/jpeg',
-          filename: file.name
+          size: fileBuffer.length,
+          contentType: fileType,
+          filename: fileName
         })
       } catch (blobError) {
         console.error('Server side Vercel Blob upload error:', blobError)

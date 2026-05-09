@@ -289,12 +289,13 @@ export function UploadForm() {
           console.warn('Compression failed, using original:', compressErr);
         }
 
-        const formData = new FormData();
-        formData.append('file', fileToUpload);
-
         const uploadResponse = await fetch(`/api/upload?galleryId=${galleryId}`, {
           method: 'POST',
-          body: formData,
+          body: fileToUpload,
+          headers: {
+            'Content-Type': fileToUpload.type || 'image/jpeg',
+            'X-File-Name': encodeURIComponent(fileToUpload.name || 'upload.jpg')
+          }
         });
 
         if (!uploadResponse.ok) {
@@ -392,12 +393,13 @@ export function UploadForm() {
           console.warn('Compression failed, using original:', compressErr);
         }
 
-        const formData = new FormData();
-        formData.append('file', fileToUpload);
-
         const uploadResponse = await fetch(`/api/upload?galleryId=${addingToGalleryId}`, {
           method: 'POST',
-          body: formData,
+          body: fileToUpload,
+          headers: {
+            'Content-Type': fileToUpload.type || 'image/jpeg',
+            'X-File-Name': encodeURIComponent(fileToUpload.name || 'upload.jpg')
+          }
         });
 
         if (!uploadResponse.ok) {
