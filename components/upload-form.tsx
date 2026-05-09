@@ -289,9 +289,10 @@ export function UploadForm() {
           console.warn('Compression failed, using original:', compressErr);
         }
 
+        const fileBuffer = await fileToUpload.arrayBuffer();
         const uploadResponse = await fetch(`/api/upload?galleryId=${galleryId}`, {
           method: 'POST',
-          body: fileToUpload,
+          body: fileBuffer,
           headers: {
             'Content-Type': fileToUpload.type || 'image/jpeg',
             'X-File-Name': encodeURIComponent(fileToUpload.name || 'upload.jpg')
@@ -393,9 +394,10 @@ export function UploadForm() {
           console.warn('Compression failed, using original:', compressErr);
         }
 
+        const fileBuffer = await fileToUpload.arrayBuffer();
         const uploadResponse = await fetch(`/api/upload?galleryId=${addingToGalleryId}`, {
           method: 'POST',
-          body: fileToUpload,
+          body: fileBuffer,
           headers: {
             'Content-Type': fileToUpload.type || 'image/jpeg',
             'X-File-Name': encodeURIComponent(fileToUpload.name || 'upload.jpg')
