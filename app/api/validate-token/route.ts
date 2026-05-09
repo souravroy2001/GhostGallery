@@ -31,13 +31,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid link', valid: false }, { status: 403 })
     }
 
-    // Check if link has expired
-    if (new Date(shareLink.expires_at) < new Date()) {
+    // Verify preview permission (only the creator can use preview=true)
+    let isPreview = preview
+    if (isPreview) {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      const createdGalleriesCookie = cookieStore.get('created_galleries')?.value || ''
+      const createdGalleries = createdGalleriesCookie ? createdGalleriesCookie.split(',') : []
+      
+      const isOwnerByAuth = user && shareLink.galleries.user_id === user.id
+      const isOwnerByCookie = createdGalleries.includes(shareLink.galleries.id)
+      
+      if (!isOwnerByAuth && !isOwnerByCookie) {
+        isPreview = false
+      }
+    }
+
+    // Check if link has expired (allow creator preview regardless)
+    if (!isPreview && new Date(shareLink.expires_at) < new Date()) {
       return NextResponse.json({ error: 'Link has expired', valid: false }, { status: 403 })
     }
 
-    // For one-time use links, check if already accessed (never allow preview once accessed)
-    if (shareLink.one_time_use && shareLink.access_count > 0) {
+    // For one-time use links, check if already accessed (allow creator preview regardless)
+    if (!isPreview && shareLink.one_time_use && shareLink.access_count > 0) {
       return NextResponse.json({ 
         error: 'This link has already been used and cannot be accessed again.', 
         valid: false 
@@ -45,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Increment access count on first access (skip if previewing)
-    if (!preview) {
+    if (!isPreview) {
       const { error: updateError } = await supabase
         .from('share_links')
         .update({

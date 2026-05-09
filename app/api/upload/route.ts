@@ -1,6 +1,7 @@
 import { put } from '@vercel/blob'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { nanoid } from 'nanoid'
 
 export async function POST(request: NextRequest) {
@@ -102,7 +103,22 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`Gallery initialized with ID: ${gallery.id}`);
-      return NextResponse.json({ success: true, galleryId: gallery.id })
+      
+      const response = NextResponse.json({ success: true, galleryId: gallery.id })
+      const cookieStore = await cookies()
+      const existing = cookieStore.get('created_galleries')?.value || ''
+      const galleriesList = existing ? existing.split(',') : []
+      if (!galleriesList.includes(gallery.id)) {
+        galleriesList.push(gallery.id)
+      }
+      response.cookies.set('created_galleries', galleriesList.join(','), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      })
+      
+      return response
     }
 
     if (action === 'add_images') {
