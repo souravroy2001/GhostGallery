@@ -46,17 +46,16 @@ function WatermarkCanvas({
     if (!ctx) return
 
     const img = new window.Image()
-    img.crossOrigin = "anonymous" // Important for CORS if loading from external origin
+    img.crossOrigin = "anonymous"
     img.onload = () => {
       canvas.width = img.width
       canvas.height = img.height
       ctx.drawImage(img, 0, 0)
 
-      // Watermark overlay
       if (watermarkText && watermarkText !== 'disabled' && watermarkText !== '__disabled__') {
         ctx.save()
         ctx.globalAlpha = 0.35
-        ctx.fillStyle = "#ff3b5c" // Ghost Gallery accent2
+        ctx.fillStyle = "#ff3b5c"
         ctx.font = `bold ${Math.max(14, img.width / 40)}px 'Space Mono', monospace`
         ctx.textAlign = "center"
 
@@ -64,7 +63,6 @@ function WatermarkCanvas({
         const sid = sessionId ? sessionId.slice(0, 8).toUpperCase() : "UNKNOWN"
         const lines = [`⚠ ${watermarkText.toUpperCase()} ⚠`, `Session: ${sid}`, ts]
 
-        // Diagonal tiled watermarks
         ctx.translate(canvas.width / 2, canvas.height / 2)
         ctx.rotate(-Math.PI / 6)
         const step = Math.max(160, img.width / 4)
@@ -147,7 +145,6 @@ export function ImageViewer({ token }: ImageViewerProps) {
       }
     }
 
-    // Add a small delay for the "decrypting" effect
     const timer = setTimeout(() => {
       validateToken()
     }, 1200)
@@ -166,11 +163,8 @@ export function ImageViewer({ token }: ImageViewerProps) {
       const now = Date.now()
       const expiry = new Date(expiresAt).getTime()
       const remaining = Math.max(0, expiry - now)
-
       setTimeLeft(remaining)
-      if (remaining === 0) {
-        setState("expired")
-      }
+      if (remaining === 0) setState("expired")
     }
 
     tick()
@@ -178,7 +172,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
     return () => clearInterval(timer)
   }, [expiresAt, state])
 
-  // Single-use link reload warning confirmation
+  // Single-use reload warning
   useEffect(() => {
     if (state !== "active") return
 
@@ -189,16 +183,11 @@ export function ImageViewer({ token }: ImageViewerProps) {
       return message
     }
 
-    // Intercept desktop mouse exiting the top of the screen (Exit Intent detection for reload/close buttons)
     const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY < 50) {
-        setShowReloadModal(true)
-      }
+      if (e.clientY < 50) setShowReloadModal(true)
     }
 
-    // Natively prevent mobile pull-down refresh on iOS Safari and Android Chrome
     document.body.style.overscrollBehaviorY = 'contain'
-
     window.addEventListener("beforeunload", handleBeforeUnload)
     document.addEventListener("mouseleave", handleMouseLeave)
 
@@ -233,9 +222,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'S' || e.key === 'P')) {
         e.preventDefault()
       }
-      if (e.key === 'PrintScreen') {
-        e.preventDefault()
-      }
+      if (e.key === 'PrintScreen') e.preventDefault()
       if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
         e.preventDefault()
         setShowReloadModal(true)
@@ -253,16 +240,10 @@ export function ImageViewer({ token }: ImageViewerProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (lightbox === null || !gallery) return
-
-      if (e.key === 'Escape') {
-        setLightbox(null)
-      } else if (e.key === 'ArrowRight') {
-        setLightbox((lightbox + 1) % gallery.images.length)
-      } else if (e.key === 'ArrowLeft') {
-        setLightbox((lightbox - 1 + gallery.images.length) % gallery.images.length)
-      }
+      if (e.key === 'Escape') setLightbox(null)
+      else if (e.key === 'ArrowRight') setLightbox((lightbox + 1) % gallery.images.length)
+      else if (e.key === 'ArrowLeft') setLightbox((lightbox - 1 + gallery.images.length) % gallery.images.length)
     }
-
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [lightbox, gallery])
@@ -282,278 +263,539 @@ export function ImageViewer({ token }: ImageViewerProps) {
     return `${s}s`
   }
 
+  /* ─── Shared styles injected once ──────────────────── */
+  const sharedStyles = `
+    @keyframes iv-scan {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+    @keyframes iv-fadeup {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes iv-popin {
+      from { opacity: 0; transform: scale(0.88); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes iv-spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes iv-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    @keyframes iv-glow-red {
+      0%, 100% { box-shadow: 0 0 20px rgba(255,59,92,.25), 0 0 60px rgba(255,59,92,.08); }
+      50%       { box-shadow: 0 0 35px rgba(255,59,92,.45), 0 0 80px rgba(255,59,92,.15); }
+    }
+    @keyframes iv-glow-amber {
+      0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,.25); }
+      50%       { box-shadow: 0 0 40px rgba(245,158,11,.4); }
+    }
+    @keyframes iv-shimmer {
+      from { background-position: -200% 0; }
+      to   { background-position: 200% 0; }
+    }
+    @keyframes iv-ticker {
+      0%   { opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @keyframes iv-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    @keyframes iv-grid-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Loading scanline */
+    .iv-scanline {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+    }
+    .iv-scanline::after {
+      content: '';
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0,229,255,.35), transparent);
+      animation: iv-scan 2.4s linear infinite;
+    }
+
+    /* Status screen base */
+    .iv-status {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,229,255,.04), transparent 70%),
+                  linear-gradient(180deg, #030810 0%, #020609 100%);
+      padding: 24px; position: relative; overflow: hidden;
+    }
+    .iv-status::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 3px, rgba(0,229,255,.012) 3px, rgba(0,229,255,.012) 4px
+      );
+    }
+
+    /* Status card */
+    .iv-card {
+      width: 100%; max-width: 460px;
+      background: linear-gradient(160deg, rgba(10,18,28,.97), rgba(6,12,20,.95));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      padding: 48px 40px;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; gap: 0;
+      box-shadow: 0 32px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
+      animation: iv-popin .4s cubic-bezier(.16,1,.3,1) both;
+      position: relative; overflow: hidden;
+    }
+    .iv-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+    }
+
+    /* Status icon ring */
+    .iv-icon-ring {
+      width: 80px; height: 80px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 28px;
+      position: relative;
+    }
+    .iv-icon-ring::before {
+      content: ''; position: absolute; inset: -4px; border-radius: 50%;
+      border: 1px solid currentColor; opacity: .2;
+    }
+    .iv-icon-ring::after {
+      content: ''; position: absolute; inset: -10px; border-radius: 50%;
+      border: 1px solid currentColor; opacity: .08;
+    }
+
+    /* Code chip */
+    .iv-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 100px;
+      font-family: var(--font-mono, monospace); font-size: 10px;
+      letter-spacing: .12em; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .iv-chip-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+    }
+
+    /* Info table */
+    .iv-table {
+      width: 100%; margin-top: 24px;
+      background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.06);
+      border-radius: 10px; overflow: hidden;
+    }
+    .iv-table-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px;
+      font-family: var(--font-mono, monospace); font-size: 11px; letter-spacing: .04em;
+    }
+    .iv-table-row + .iv-table-row {
+      border-top: 1px solid rgba(255,255,255,.05);
+    }
+    .iv-table-row span:first-child { color: rgba(136,146,164,.5); }
+
+    /* Viewer header */
+    .iv-header {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 24px; height: 52px;
+      background: rgba(3,8,14,.92);
+      backdrop-filter: blur(20px) saturate(1.4);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    /* Timer badge */
+    .iv-timer {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 12px; border-radius: 100px;
+      font-family: var(--font-mono, monospace); font-size: 11px; letter-spacing: .06em;
+      border: 1px solid rgba(0,229,255,.2); background: rgba(0,229,255,.06);
+      color: rgba(0,229,255,.8);
+      transition: all .3s;
+    }
+    .iv-timer.urgent {
+      border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.08);
+      color: #ef4444; animation: iv-pulse 1s ease-in-out infinite;
+    }
+    .iv-timer-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: currentColor; animation: iv-blink 1.2s ease-in-out infinite;
+    }
+
+    /* Session badge */
+    .iv-session {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 6px;
+      font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: .06em;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+      color: rgba(136,146,164,.6);
+    }
+
+    /* Warning banner */
+    .iv-banner {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 11px 24px;
+      background: linear-gradient(90deg, rgba(245,158,11,.0) 0%, rgba(245,158,11,.07) 30%, rgba(245,158,11,.07) 70%, rgba(245,158,11,.0) 100%);
+      border-bottom: 1px solid rgba(245,158,11,.15);
+      font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: .08em;
+      color: rgba(245,158,11,.75); text-transform: uppercase; text-align: center;
+    }
+
+    /* Gallery grid */
+    .iv-grid {
+      width: 100%; max-width: 1400px; margin: 0 auto;
+      padding: 28px 24px 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 640px) {
+      .iv-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 16px 12px 60px; }
+    }
+    @media (min-width: 1280px) {
+      .iv-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+    }
+
+    /* Gallery thumb */
+    .iv-thumb {
+      position: relative; aspect-ratio: 1;
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.07);
+      background: rgba(8,14,22,.6);
+      cursor: pointer;
+      transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .2s, box-shadow .25s;
+      animation: iv-grid-in .4s cubic-bezier(.16,1,.3,1) both;
+    }
+    .iv-thumb:hover {
+      transform: translateY(-5px) scale(1.01);
+      border-color: rgba(0,229,255,.4);
+      box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(0,229,255,.12);
+    }
+    .iv-thumb canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+    /* Thumb overlay */
+    .iv-thumb-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(3,8,14,.85) 0%, rgba(3,8,14,0) 55%);
+      display: flex; align-items: flex-end;
+      padding: 12px;
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .iv-thumb:hover .iv-thumb-overlay { opacity: 1; }
+    .iv-thumb-idx {
+      position: absolute; top: 9px; right: 9px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.15);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono, monospace); font-size: 9px;
+      color: rgba(200,216,232,.7); letter-spacing: 0;
+      opacity: 0; transition: opacity .2s;
+    }
+    .iv-thumb:hover .iv-thumb-idx { opacity: 1; }
+
+    /* Blur overlay */
+    .iv-blur-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(2,6,12,.92);
+      backdrop-filter: blur(24px) saturate(0);
+      display: flex; align-items: center; justify-content: center;
+      animation: iv-fadeup .2s ease;
+    }
+    .iv-blur-card {
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      padding: 40px 48px; border-radius: 20px;
+      background: rgba(10,18,28,.95); border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 24px 60px rgba(0,0,0,.6);
+    }
+
+    /* Lightbox */
+    .iv-lightbox {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(1,4,8,.96);
+      backdrop-filter: blur(28px) saturate(1.2);
+      display: flex; align-items: center; justify-content: center;
+      animation: iv-fadeup .2s ease;
+    }
+    .iv-lightbox-close {
+      position: absolute; top: 20px; right: 24px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      color: rgba(200,216,232,.7); font-size: 18px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s; z-index: 10;
+    }
+    .iv-lightbox-close:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+    .iv-lb-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      color: rgba(200,216,232,.8); font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 10; transition: all .15s;
+    }
+    .iv-lb-nav:hover { background: rgba(0,229,255,.12); border-color: rgba(0,229,255,.4); color: #00e5ff; }
+    .iv-lb-nav.prev { left: 20px; }
+    .iv-lb-nav.next { right: 20px; }
+
+    .iv-lb-counter {
+      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 10;
+    }
+    .iv-lb-title {
+      padding: 5px 18px; border-radius: 100px;
+      background: rgba(10,16,22,.85); border: 1px solid rgba(255,255,255,.1);
+      font-family: var(--font-mono, monospace); font-size: 11px;
+      color: rgba(200,216,232,.7); letter-spacing: .05em;
+      backdrop-filter: blur(8px);
+    }
+    .iv-lb-nums {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono, monospace); font-size: 11px; color: rgba(136,146,164,.5);
+    }
+    .iv-lb-dot-track { display: flex; gap: 4px; }
+    .iv-lb-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: rgba(255,255,255,.2); transition: all .2s;
+    }
+    .iv-lb-dot.cur { background: #00e5ff; box-shadow: 0 0 6px #00e5ff; width: 16px; border-radius: 2px; }
+
+    /* Reload modal */
+    .iv-reload-modal {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(2,6,12,.9);
+      backdrop-filter: blur(20px) saturate(1.4);
+      display: flex; align-items: center; justify-content: center;
+      animation: iv-fadeup .2s ease;
+    }
+
+    /* Loading screen */
+    .iv-loading {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 24px;
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,229,255,.05), transparent),
+                  #030810;
+      position: relative; overflow: hidden;
+    }
+    .iv-spinner {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 2px solid rgba(0,229,255,.15);
+      border-top-color: #00e5ff;
+      animation: iv-spin 1s linear infinite;
+      box-shadow: 0 0 20px rgba(0,229,255,.15);
+    }
+    .iv-loading-text {
+      font-family: var(--font-mono, monospace); font-size: 12px;
+      color: rgba(0,229,255,.6); letter-spacing: .12em; text-transform: uppercase;
+    }
+    .iv-loading-sub {
+      font-family: var(--font-mono, monospace); font-size: 10px;
+      color: rgba(136,146,164,.35); letter-spacing: .06em; text-transform: uppercase;
+      margin-top: -16px;
+    }
+  `
+
+  /* ─── LOADING ──────────────────────────────────────── */
   if (state === "loading") {
     return (
-      <div className="status-screen loading-screen">
-        <div className="status-spinner"></div>
-        <p>Verifying secure link<span className="dots">...</span></p>
-      </div>
+      <>
+        <style>{sharedStyles}</style>
+        <div className="iv-loading">
+          <div className="iv-scanline" />
+          <div className="iv-spinner" />
+          <p className="iv-loading-text">Verifying secure link</p>
+          <p className="iv-loading-sub">Decrypting cryptographic token…</p>
+        </div>
+      </>
     )
   }
 
+  /* ─── STATUS SCREENS ───────────────────────────────── */
   if (state === "used") {
     return (
-      <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
-        <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
-          <div className="success-icon" style={{
-            background: 'rgba(255, 59, 92, 0.08)',
-            border: '2px solid var(--accent2)',
-            color: 'var(--accent2)',
-            boxShadow: '0 0 25px rgba(255, 59, 92, 0.25)',
-            animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            margin: '0 auto 24px auto'
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </div>
+      <>
+        <style>{sharedStyles}</style>
+        <div className="iv-status">
+          <div className="iv-scanline" />
+          <div className="iv-card" style={{ borderColor: 'rgba(239,68,68,.2)', animation: 'iv-glow-red 3s ease-in-out infinite, iv-popin .4s cubic-bezier(.16,1,.3,1) both' }}>
+            <div className="iv-icon-ring" style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', boxShadow: '0 0 30px rgba(239,68,68,.2)' }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
 
-          <div>
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--accent2)',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              display: 'inline-block',
-              marginBottom: '8px'
-            }}>
-              [ ACCESS DENIED ]
-            </span>
-            <h2 style={{ fontSize: '28px', color: 'var(--text)', marginBottom: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>Link Already Used</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
-              This secure Ghost Gallery link has already been accessed and is now permanently destroyed.
+            <div className="iv-chip" style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444' }}>
+              <span className="iv-chip-dot" style={{ background: '#ef4444', boxShadow: '0 0 5px #ef4444' }} />
+              ACCESS DENIED
+            </div>
+
+            <h2 style={{ fontFamily: 'var(--font-display, var(--font-mono))', fontSize: '28px', color: '#e8f0f8', margin: '0 0 12px', letterSpacing: '.04em' }}>Link Already Used</h2>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'rgba(136,146,164,.7)', lineHeight: 1.7, margin: 0 }}>
+              This secure Ghost Gallery link was already accessed and is permanently destroyed. Single-use tokens cannot be replayed.
             </p>
-            <div style={{
-              background: 'rgba(20, 28, 35, 0.6)',
-              border: '1px solid var(--border)',
-              padding: '12px 16px',
-              borderRadius: '4px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
-              color: 'var(--text-muted)',
-              textAlign: 'left',
-              lineHeight: '1.5'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>STATUS:</span>
-                <span style={{ color: 'var(--accent2)', fontWeight: 'bold' }}>REVOKED (403)</span>
+
+            <div className="iv-table">
+              <div className="iv-table-row">
+                <span>STATUS</span>
+                <span style={{ color: '#ef4444', fontWeight: 700 }}>REVOKED — 403</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>SECURITY:</span>
-                <span style={{ color: 'var(--text)' }}>SINGLE-USE POLICY</span>
+              <div className="iv-table-row">
+                <span>POLICY</span>
+                <span style={{ color: '#e8f0f8' }}>SINGLE-USE TOKEN</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
   if (state === "expired") {
     return (
-      <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
-        <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
-          <div className="success-icon" style={{
-            background: 'rgba(255, 184, 0, 0.08)',
-            border: '2px solid var(--warning)',
-            color: 'var(--warning)',
-            boxShadow: '0 0 25px rgba(255, 184, 0, 0.25)',
-            animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            margin: '0 auto 24px auto'
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 2h14" />
-              <path d="M5 22h14" />
-              <path d="M19 2v4c0 3.87-3.13 7-7 7s-7-3.13-7-7V2" />
-              <path d="M12 13c-3.87 0-7 3.13-7 7v2h14v-2c0-3.13-3.13-7-7-7z" />
-            </svg>
-          </div>
+      <>
+        <style>{sharedStyles}</style>
+        <div className="iv-status">
+          <div className="iv-scanline" />
+          <div className="iv-card" style={{ borderColor: 'rgba(245,158,11,.2)', animation: 'iv-glow-amber 3s ease-in-out infinite, iv-popin .4s cubic-bezier(.16,1,.3,1) both' }}>
+            <div className="iv-icon-ring" style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.3)', color: '#f59e0b', boxShadow: '0 0 30px rgba(245,158,11,.2)' }}>
+              <Clock size={30} strokeWidth={1.8} />
+            </div>
 
-          <div>
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--warning)',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              display: 'inline-block',
-              marginBottom: '8px'
-            }}>
-              [ TIME EXPIRED ]
-            </span>
-            <h2 style={{ fontSize: '28px', color: 'var(--text)', marginBottom: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>Link Expired</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
-              This secure Ghost Gallery link has exceeded its validity timeframe and has been automatically deactivated.
+            <div className="iv-chip" style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.25)', color: '#f59e0b' }}>
+              <span className="iv-chip-dot" style={{ background: '#f59e0b', boxShadow: '0 0 5px #f59e0b' }} />
+              TIME EXPIRED
+            </div>
+
+            <h2 style={{ fontFamily: 'var(--font-display, var(--font-mono))', fontSize: '28px', color: '#e8f0f8', margin: '0 0 12px', letterSpacing: '.04em' }}>Link Expired</h2>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'rgba(136,146,164,.7)', lineHeight: 1.7, margin: 0 }}>
+              This Ghost Gallery link exceeded its validity window and was automatically deactivated. Contact the sender for a new link.
             </p>
-            <div style={{
-              background: 'rgba(20, 28, 35, 0.6)',
-              border: '1px solid var(--border)',
-              padding: '12px 16px',
-              borderRadius: '4px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
-              color: 'var(--text-muted)',
-              textAlign: 'left',
-              lineHeight: '1.5'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>STATUS:</span>
-                <span style={{ color: 'var(--warning)', fontWeight: 'bold' }}>EXPIRED (410)</span>
+
+            <div className="iv-table">
+              <div className="iv-table-row">
+                <span>STATUS</span>
+                <span style={{ color: '#f59e0b', fontWeight: 700 }}>EXPIRED — 410</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>RETENTION:</span>
-                <span style={{ color: 'var(--text)' }}>AUTO-DESTRUCT ACTIVE</span>
+              <div className="iv-table-row">
+                <span>RETENTION</span>
+                <span style={{ color: '#e8f0f8' }}>AUTO-DESTRUCT ACTIVE</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
   if (state === "invalid" || !gallery) {
     return (
-      <div className="status-screen error-screen" style={{ animation: 'fade-up 0.5s ease' }}>
-        <div className="link-generated-container" style={{ maxWidth: '440px', padding: '40px 32px' }}>
-          <div className="success-icon" style={{
-            background: 'rgba(255, 59, 92, 0.08)',
-            border: '2px solid var(--accent2)',
-            color: 'var(--accent2)',
-            boxShadow: '0 0 25px rgba(255, 59, 92, 0.25)',
-            animation: 'pop-glow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            margin: '0 auto 24px auto'
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </div>
+      <>
+        <style>{sharedStyles}</style>
+        <div className="iv-status">
+          <div className="iv-scanline" />
+          <div className="iv-card" style={{ borderColor: 'rgba(239,68,68,.15)', animation: 'iv-popin .4s cubic-bezier(.16,1,.3,1) both' }}>
+            <div className="iv-icon-ring" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444', boxShadow: '0 0 20px rgba(239,68,68,.15)' }}>
+              <AlertTriangle size={30} strokeWidth={1.8} />
+            </div>
 
-          <div>
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--accent2)',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              display: 'inline-block',
-              marginBottom: '8px'
-            }}>
-              [ LINK UNVERIFIED ]
-            </span>
-            <h2 style={{ fontSize: '28px', color: 'var(--text)', marginBottom: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>Invalid Link</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', lineHeight: '1.6', marginBottom: '20px' }}>
-              The cryptographic token provided is invalid, has been tampered with, or does not exist on our servers.
+            <div className="iv-chip" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', color: 'rgba(239,68,68,.85)' }}>
+              <span className="iv-chip-dot" style={{ background: '#ef4444' }} />
+              LINK UNVERIFIED
+            </div>
+
+            <h2 style={{ fontFamily: 'var(--font-display, var(--font-mono))', fontSize: '28px', color: '#e8f0f8', margin: '0 0 12px', letterSpacing: '.04em' }}>Invalid Link</h2>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'rgba(136,146,164,.7)', lineHeight: 1.7, margin: 0 }}>
+              The cryptographic token is invalid, tampered with, or does not exist on our servers. Verify you have the correct URL.
             </p>
-            <div style={{
-              background: 'rgba(20, 28, 35, 0.6)',
-              border: '1px solid var(--border)',
-              padding: '12px 16px',
-              borderRadius: '4px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
-              color: 'var(--text-muted)',
-              textAlign: 'left',
-              lineHeight: '1.5'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span>STATUS:</span>
-                <span style={{ color: 'var(--accent2)', fontWeight: 'bold' }}>NOT FOUND (404)</span>
+
+            <div className="iv-table">
+              <div className="iv-table-row">
+                <span>STATUS</span>
+                <span style={{ color: '#ef4444', fontWeight: 700 }}>NOT FOUND — 404</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>SECURITY:</span>
-                <span style={{ color: 'var(--text)' }}>CRYPTO-TOKEN FAILURE</span>
+              <div className="iv-table-row">
+                <span>SECURITY</span>
+                <span style={{ color: '#e8f0f8' }}>CRYPTO-TOKEN FAILURE</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     )
   }
 
+  /* ─── ACTIVE GALLERY VIEW ──────────────────────────── */
   return (
-    <div className={`gallery-viewer ${blurred ? "blurred" : ""} secure-image-container`}>
-      {/* Header */}
-      <div className="viewer-header">
-        <span className="viewer-logo">⬡ {gallery?.title?.toUpperCase() || 'GHOST GALLERY'}</span>
-        <div className="viewer-meta">
-          <span className="session-badge hidden sm:block">Session: {sessionId.slice(0, 8).toUpperCase()}</span>
-          {timeLeft !== null && (
-            <span className={`timer-badge ${timeLeft < 60000 ? "urgent" : ""}`}>
-              ⏱ {formatTime(timeLeft)}
+    <>
+      <style>{sharedStyles}</style>
+
+      <div className={`gallery-viewer ${blurred ? "blurred" : ""} secure-image-container`} style={{ minHeight: '100vh', background: '#030810', position: 'relative' }}>
+
+        {/* ── Header ── */}
+        <div className="iv-header">
+          <span style={{
+            fontFamily: 'var(--font-display, var(--font-mono))', fontSize: '13px',
+            letterSpacing: '.12em', color: '#e8f0f8', fontWeight: 700,
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ color: '#00e5ff', fontSize: 16, filter: 'drop-shadow(0 0 6px rgba(0,229,255,.5))' }}>⬡</span>
+            {gallery?.title?.toUpperCase() || 'GHOST GALLERY'}
+          </span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="iv-session hidden sm:inline-flex">
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00e5ff', boxShadow: '0 0 5px #00e5ff', display: 'inline-block' }} />
+              {sessionId.slice(0, 8).toUpperCase()}
             </span>
-          )}
-        </div>
-      </div>
-
-      {/* Redesigned Cyber Notice Banner */}
-      <div style={{
-        background: 'linear-gradient(90deg, rgba(255, 184, 0, 0.08), rgba(255, 184, 0, 0.02), rgba(255, 184, 0, 0.08))',
-        borderBottom: '1px solid rgba(255, 184, 0, 0.2)',
-        padding: '14px 24px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '11px',
-        color: 'var(--warning)',
-        letterSpacing: '0.05em',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        textAlign: 'center',
-        textTransform: 'uppercase'
-      }}>
-        <AlertTriangle size={14} style={{ color: '#f59e0b' }} />
-        <span>{`ONE-TIME ACCESS ONLY — This session is securely logged. ${gallery.watermarkText && gallery.watermarkText !== 'disabled' ? 'All images are dynamically watermarked.' : ''}`}</span>
-      </div>
-
-      {/* Blur Overlay */}
-      {blurred && (
-        <div className="blur-overlay">
-          <div className="blur-message">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent)', filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.4))', marginBottom: '8px' }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <p>Content hidden</p>
-            <p className="blur-sub">Return to this tab to continue viewing</p>
+            {timeLeft !== null && (
+              <span className={`iv-timer ${timeLeft < 60000 ? 'urgent' : ''}`}>
+                <span className="iv-timer-dot" />
+                {formatTime(timeLeft)}
+              </span>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Redesigned Premium Gallery Grid */}
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
-        {gallery.images.map((img, idx) => (
-          <div
-            key={img.id}
-            className="gallery-item-premium"
-            onClick={() => setLightbox(idx)}
-            style={{
-              position: 'relative',
-              aspectRatio: '1',
-              borderRadius: '12px',
-              border: '1px solid var(--border)',
-              background: 'rgba(10, 16, 22, 0.6)',
-              overflow: 'hidden',
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-              animation: 'fadeIn 0.5s ease both',
-              animationDelay: `${idx * 0.08}s`
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent)';
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 229, 255, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border)';
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+        {/* ── Warning banner ── */}
+        <div className="iv-banner">
+          <AlertTriangle size={13} style={{ flexShrink: 0, opacity: .8 }} />
+          <span>
+            One-time access only — This session is securely logged.
+            {gallery.watermarkText && gallery.watermarkText !== 'disabled'
+              ? ' All images carry dynamic watermarks.'
+              : ''}
+          </span>
+        </div>
+
+        {/* ── Blur overlay ── */}
+        {blurred && (
+          <div className="iv-blur-overlay">
+            <div className="iv-blur-card">
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,229,255,.08)', border: '1px solid rgba(0,229,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(0,229,255,.15)' }}>
+                <Lock size={22} style={{ color: '#00e5ff' }} />
+              </div>
+              <p style={{ fontFamily: 'var(--font-display, var(--font-mono))', fontSize: '16px', color: '#e8f0f8', margin: 0, letterSpacing: '.04em' }}>Content Hidden</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(136,146,164,.55)', margin: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>Return to this tab to resume viewing</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Gallery grid ── */}
+        <div className="iv-grid">
+          {gallery.images.map((img, idx) => (
+            <div
+              key={img.id}
+              className="iv-thumb"
+              style={{ animationDelay: `${idx * 0.055}s` }}
+              onClick={() => setLightbox(idx)}
+            >
               <WatermarkCanvas
                 src={getImageUrl(img.pathname)}
                 sessionId={sessionId}
@@ -561,245 +803,122 @@ export function ImageViewer({ token }: ImageViewerProps) {
                 watermarkText={gallery.watermarkText}
                 objectFit="cover"
               />
+              <div className="iv-thumb-overlay">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#00e5ff' }}>
+                  <Maximize2 size={11} /> EXPAND
+                </span>
+              </div>
+              <span className="iv-thumb-idx">{idx + 1}</span>
+            </div>
+          ))}
+        </div>
 
-              {/* Sleek Minimalist Hover Overlay */}
-              <div
-                className="img-overlay-premium"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(to top, rgba(3, 7, 10, 0.8) 0%, rgba(3, 7, 10, 0) 60%)',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'space-between',
-                  padding: '16px',
-                  opacity: 0,
-                  transition: 'all 0.25s ease'
-                }}
-              >
-                <span style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  color: 'var(--text)',
-                  letterSpacing: '0.05em'
-                }}>
-                  {gallery.title || 'GHOST GALLERY'}
-                </span>
-                <span style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  color: 'var(--accent)'
-                }}>
-                  <Eye size={12} /> VIEW
-                </span>
+        {/* ── Lightbox ── */}
+        {lightbox !== null && (
+          <div className="iv-lightbox" onClick={() => setLightbox(null)}>
+            <button className="iv-lightbox-close" onClick={() => setLightbox(null)}>×</button>
+
+            {gallery.images.length > 1 && (
+              <>
+                <button className="iv-lb-nav prev" onClick={e => { e.stopPropagation(); setLightbox((lightbox - 1 + gallery.images.length) % gallery.images.length) }}>‹</button>
+                <button className="iv-lb-nav next" onClick={e => { e.stopPropagation(); setLightbox((lightbox + 1) % gallery.images.length) }}>›</button>
+              </>
+            )}
+
+            <div className="lightbox-content" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', maxWidth: '90vw', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WatermarkCanvas
+                src={getImageUrl(gallery.images[lightbox].pathname)}
+                sessionId={sessionId}
+                visible={!blurred}
+                watermarkText={gallery.watermarkText}
+                objectFit="contain"
+                className="lightbox-image"
+              />
+            </div>
+
+            {/* Caption + dot track */}
+            <div className="iv-lb-counter">
+              <div className="iv-lb-title">{gallery.title || 'GHOST GALLERY'}</div>
+              <div className="iv-lb-nums">
+                <div className="iv-lb-dot-track">
+                  {gallery.images.map((_, i) => (
+                    <div key={i} className={`iv-lb-dot ${i === lightbox ? 'cur' : ''}`}
+                      onClick={e => { e.stopPropagation(); setLightbox(i) }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  ))}
+                </div>
+                <span style={{ marginLeft: 10 }}>{lightbox + 1} / {gallery.images.length}</span>
               </div>
             </div>
           </div>
-        ))}
+        )}
+
+        {/* ── Reload warning modal ── */}
+        {showReloadModal && (
+          <div className="iv-reload-modal">
+            <div style={{
+              width: '90%', maxWidth: 440,
+              background: 'linear-gradient(160deg, rgba(12,18,28,.98), rgba(8,12,20,.96))',
+              border: '1px solid rgba(239,68,68,.3)',
+              borderRadius: 20, padding: '44px 36px',
+              textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
+              boxShadow: '0 32px 80px rgba(0,0,0,.8), 0 0 60px rgba(239,68,68,.12)',
+              animation: 'iv-popin .3s cubic-bezier(.16,1,.3,1)',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              {/* Top glow line */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(239,68,68,.4), transparent)' }} />
+
+              <div style={{
+                width: 72, height: 72, borderRadius: '50%', marginBottom: 24,
+                background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 30px rgba(239,68,68,.2)', color: '#ef4444',
+                animation: 'iv-glow-red 2s ease-in-out infinite',
+              }}>
+                <AlertTriangle size={30} strokeWidth={1.8} />
+              </div>
+
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 100, background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)', marginBottom: 16 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 5px #ef4444', display: 'inline-block', animation: 'iv-blink 1s ease-in-out infinite' }} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#ef4444', letterSpacing: '.1em' }}>SECURE WARNING</span>
+              </div>
+
+              <h3 style={{ fontFamily: 'var(--font-display, var(--font-mono))', fontSize: '22px', color: '#e8f0f8', margin: '0 0 14px', letterSpacing: '.04em' }}>Confirm Reload?</h3>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'rgba(136,146,164,.7)', lineHeight: 1.7, margin: '0 0 28px' }}>
+                This is a <strong style={{ color: '#e8f0f8' }}>single-use</strong> gallery. Reloading or closing will permanently destroy this cryptographic token and revoke your access forever.
+              </p>
+
+              <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                <button onClick={() => setShowReloadModal(false)} style={{
+                  flex: 1, padding: '13px', borderRadius: 10, cursor: 'pointer',
+                  background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)',
+                  color: 'rgba(200,216,232,.8)', fontFamily: 'var(--font-mono)', fontSize: '12px',
+                  fontWeight: 700, letterSpacing: '.06em', transition: 'all .15s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.09)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.2)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.1)' }}
+                >
+                  Cancel — Stay
+                </button>
+                <button onClick={() => window.location.reload()} style={{
+                  flex: 1, padding: '13px', borderRadius: 10, cursor: 'pointer',
+                  background: '#ef4444', border: 'none',
+                  color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '12px',
+                  fontWeight: 700, letterSpacing: '.06em',
+                  boxShadow: '0 4px 20px rgba(239,68,68,.4)', transition: 'all .15s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(239,68,68,.55)' }}
+                  onMouseLeave={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(239,68,68,.4)' }}
+                >
+                  Confirm Reload
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Lightbox */}
-      {lightbox !== null && (
-        <div className="lightbox" onClick={() => setLightbox(null)} style={{ backdropFilter: 'blur(20px)' }}>
-          <button className="lightbox-close" onClick={() => setLightbox(null)}>×</button>
-
-          {gallery.images.length > 1 && (
-            <>
-              <button
-                className="lightbox-nav prev"
-                onClick={(e) => { e.stopPropagation(); setLightbox((lightbox - 1 + gallery.images.length) % gallery.images.length) }}
-              >‹</button>
-              <button
-                className="lightbox-nav next"
-                onClick={(e) => { e.stopPropagation(); setLightbox((lightbox + 1) % gallery.images.length) }}
-              >›</button>
-            </>
-          )}
-
-          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-            <WatermarkCanvas
-              src={getImageUrl(gallery.images[lightbox].pathname)}
-              sessionId={sessionId}
-              visible={!blurred}
-              watermarkText={gallery.watermarkText}
-              objectFit="contain"
-              className="lightbox-image"
-            />
-          </div>
-
-          {/* Lightbox Caption */}
-          <div style={{
-            position: 'absolute',
-            bottom: '32px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '8px',
-            zIndex: 10
-          }}>
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
-              color: 'var(--text)',
-              letterSpacing: '0.05em',
-              background: 'rgba(10, 16, 22, 0.8)',
-              border: '1px solid var(--border)',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              backdropFilter: 'blur(8px)'
-            }}>
-              {gallery.title || 'GHOST GALLERY'}
-            </span>
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--text-muted)',
-              letterSpacing: '0.1em'
-            }}>
-              {lightbox + 1} / {gallery.images.length}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Premium Cyber Security Reload Modal */}
-      {showReloadModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(3, 7, 10, 0.85)',
-          backdropFilter: 'blur(16px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          animation: 'fade-in 0.3s ease both'
-        }}>
-          <div style={{
-            background: 'rgba(10, 16, 22, 0.95)',
-            border: '2px solid var(--accent2)',
-            boxShadow: '0 0 35px rgba(255, 59, 92, 0.25)',
-            borderRadius: '16px',
-            padding: '40px 32px',
-            maxWidth: '440px',
-            width: '90%',
-            textAlign: 'center',
-            animation: 'pop-glow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              background: 'rgba(255, 59, 92, 0.08)',
-              border: '2px solid var(--accent2)',
-              color: 'var(--accent2)',
-              boxShadow: '0 0 20px rgba(255, 59, 92, 0.2)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 24px auto'
-            }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </div>
-
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--accent2)',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              display: 'inline-block',
-              marginBottom: '8px'
-            }}>
-              [ SECURE WARNING ]
-            </span>
-            <h3 style={{
-              fontSize: '24px',
-              color: 'var(--text)',
-              marginBottom: '12px',
-              fontFamily: 'var(--font-display)',
-              letterSpacing: '0.05em'
-            }}>Confirm Reload?</h3>
-
-            <p style={{
-              color: 'var(--text-muted)',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              marginBottom: '28px'
-            }}>
-              This is a secure **single-use** gallery. If you reload or close this page, this cryptographic token will be **destroyed permanently** and you will lose access forever!
-            </p>
-
-            <div style={{
-              display: 'flex',
-              gap: '16px'
-            }}>
-              <button
-                onClick={() => setShowReloadModal(false)}
-                style={{
-                  flex: 1,
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text)',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '13px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                  e.currentTarget.style.borderColor = 'var(--text-muted)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                }}
-              >
-                CANCEL (STAY)
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                style={{
-                  flex: 1,
-                  background: 'var(--accent2)',
-                  border: 'none',
-                  color: '#fff',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '13px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 15px rgba(255, 59, 92, 0.3)',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.filter = 'brightness(1.1)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 59, 92, 0.5)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.filter = 'none';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 59, 92, 0.3)';
-                }}
-              >
-                CONFIRM RELOAD
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   )
 }
