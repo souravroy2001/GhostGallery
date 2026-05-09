@@ -724,14 +724,15 @@ export function UploadForm() {
                   </div>
                 ) : (
                   <div style={{ padding: 16 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 10 }}>
+                    <div className="gg-scroll" style={{ display: 'flex', overflowX: 'auto', gap: 10, paddingBottom: 8 }}>
                       {files.map(img => (
-                        <div key={img.id} className="gg-thumb">
+                        <div key={img.id} className="gg-thumb" style={{ width: 90, flexShrink: 0 }}>
                           <img src={img.preview} alt={img.name} />
                           <button className="gg-remove" onClick={e => removeFile(e, img.id)}>×</button>
                         </div>
                       ))}
                       <div onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }} style={{
+                        width: 90, flexShrink: 0,
                         aspectRatio: '1', borderRadius: 8, border: '1px dashed rgba(0,229,255,.2)',
                         background: 'rgba(0,229,255,.03)', display: 'flex', flexDirection: 'column',
                         alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer',
