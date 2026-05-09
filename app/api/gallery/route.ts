@@ -9,11 +9,36 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
+    const supabase = await createClient()
+
     if (!id) {
-      return NextResponse.json({ error: 'Missing gallery ID' }, { status: 400 })
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      const { data: galleries, error } = await supabase
+        .from('galleries')
+        .select('id, title, created_at, gallery_images(id)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching user galleries:', error)
+        return NextResponse.json({ error: 'Failed to fetch galleries' }, { status: 500 })
+      }
+
+      const formattedGalleries = galleries.map((g: any) => ({
+        id: g.id,
+        title: g.title,
+        createdAt: g.created_at,
+        imageCount: g.gallery_images ? g.gallery_images.length : 0
+      }))
+
+      return NextResponse.json({ success: true, galleries: formattedGalleries })
     }
 
-    const supabase = await createClient()
+
 
     // Fetch gallery with images and all share links
     const { data: gallery, error: galleryError } = await supabase

@@ -84,11 +84,14 @@ export async function POST(request: NextRequest) {
 
     if (action === 'init') {
       console.log('Initializing empty gallery in Supabase...');
+      const { data: { user } } = await supabase.auth.getUser()
+      
       const { data: gallery, error: galleryError } = await supabase
         .from('galleries')
         .insert({
           title: title || 'Untitled Gallery',
           watermark_text: watermarkText || 'Confidential',
+          user_id: user?.id || null,
         })
         .select()
         .single()

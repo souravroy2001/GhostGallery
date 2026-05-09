@@ -24,12 +24,14 @@ function WatermarkCanvas({
   src,
   sessionId,
   visible,
-  watermarkText
+  watermarkText,
+  objectFit = "contain"
 }: {
   src: string,
   sessionId: string,
   visible: boolean,
-  watermarkText: string
+  watermarkText: string,
+  objectFit?: "contain" | "cover"
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [loaded, setLoaded] = useState(false)
@@ -85,7 +87,7 @@ function WatermarkCanvas({
       style={{
         width: "100%",
         height: "100%",
-        objectFit: "contain",
+        objectFit,
         display: loaded && visible ? "block" : "none",
       }}
     />
@@ -519,14 +521,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
       )}
 
       {/* Redesigned Premium Gallery Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '24px',
-        padding: '10px 32px 64px 32px',
-        maxWidth: '1400px',
-        margin: '0 auto'
-      }}>
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
         {gallery.images.map((img, idx) => (
           <div
             key={img.id}
@@ -561,6 +556,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
                 sessionId={sessionId}
                 visible={!blurred}
                 watermarkText={gallery.watermarkText}
+                objectFit="cover"
               />
 
               {/* Sleek Minimalist Hover Overlay */}
@@ -626,6 +622,7 @@ export function ImageViewer({ token }: ImageViewerProps) {
               sessionId={sessionId}
               visible={!blurred}
               watermarkText={gallery.watermarkText}
+              objectFit="contain"
             />
           </div>
 

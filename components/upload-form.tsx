@@ -178,13 +178,31 @@ export function UploadForm() {
   const fetchMyGalleries = async () => {
     setDashboardLoading(true)
     try {
+      // 1. Fetch cloud galleries
+      let galleryList = []
+      const res = await fetch('/api/gallery')
+      if (res.ok) {
+        const data = await res.json()
+        galleryList = data.galleries || []
+      }
+
+      // 2. Merge with local storage to support legacy galleries created before user_id was added
       const saved = JSON.parse(localStorage.getItem('ghost_galleries') || '[]')
+      const allGalleryIds = new Set(galleryList.map((g: any) => g.id))
+      
+      for (const g of saved) {
+        if (!allGalleryIds.has(g.id)) {
+          galleryList.push(g)
+          allGalleryIds.add(g.id)
+        }
+      }
+
       const enrichedGalleries = await Promise.all(
-        saved.map(async (g: any) => {
+        galleryList.map(async (g: any) => {
           try {
-            const res = await fetch(`/api/gallery?id=${g.id}`)
-            if (res.ok) {
-              const data = await res.json()
+            const detailRes = await fetch(`/api/gallery?id=${g.id}`)
+            if (detailRes.ok) {
+              const data = await detailRes.json()
               return data.gallery
             }
             return { ...g, error: 'Removed or not found on server' }
@@ -193,6 +211,12 @@ export function UploadForm() {
           }
         })
       )
+      
+      // Update local storage to cache the merged list
+      if (galleryList.length > 0) {
+         localStorage.setItem('ghost_galleries', JSON.stringify(galleryList))
+      }
+      
       setMyGalleries(enrichedGalleries)
     } catch (err) {
       console.error('Error fetching dashboard galleries:', err)
