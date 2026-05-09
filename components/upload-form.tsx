@@ -145,7 +145,7 @@ export function UploadForm() {
   useEffect(() => { if (user && activeTab === 'dashboard') fetchMyGalleries() }, [user, activeTab])
 
   /* ── File processing ── */
-  const processFiles = async (newFiles: FileList | null) => {
+  const processFiles = async (newFiles: FileList | File[] | null) => {
     if (!newFiles) return
     const valid = Array.from(newFiles).filter(f => f.type.startsWith('image/'))
     const currSize = files.reduce((a, f) => a + f.size, 0)
@@ -170,6 +170,19 @@ export function UploadForm() {
       return prev.filter(f => f.id !== id)
     })
   }
+
+  /* ── Paste Handler ── */
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (activeTab !== 'create' || isUploading || dialogOpen) return
+      if (e.clipboardData && e.clipboardData.files.length > 0) {
+        e.preventDefault()
+        processFiles(e.clipboardData.files)
+      }
+    }
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [activeTab, isUploading, dialogOpen, files])
 
   /* ── Upload ── */
   const handleGenerate = async () => {
@@ -705,7 +718,33 @@ export function UploadForm() {
                 style={{ minHeight: files.length ? 'auto' : 200 }}
                 onDragOver={e => { e.preventDefault(); setDragging(true) }}
                 onDragLeave={() => setDragging(false)}
-                onDrop={e => { e.preventDefault(); setDragging(false); processFiles(e.dataTransfer.files) }}
+                onDrop={async e => { 
+                  e.preventDefault(); 
+                  setDragging(false); 
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    processFiles(e.dataTransfer.files) 
+                  } else {
+                    const html = e.dataTransfer.getData('text/html')
+                    const url = e.dataTransfer.getData('URL') || e.dataTransfer.getData('text/uri-list')
+                    let imgSrc = url
+                    if (html) {
+                       const match = html.match(/src\s*=\s*"([^"]+)"/)
+                       if (match) imgSrc = match[1]
+                    }
+                    if (imgSrc) {
+                       try {
+                         toast({ title: 'Fetching image...', description: 'Downloading from external site' })
+                         const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(imgSrc)}`)
+                         if (!res.ok) throw new Error('Proxy failed')
+                         const blob = await res.blob()
+                         const file = new File([blob], "dragged-image.jpg", { type: blob.type || 'image/jpeg' })
+                         processFiles([file])
+                       } catch (err) {
+                         showCustomAlert('FETCH FAILED', 'Could not fetch the external image. Try saving it to your computer first.', 'danger')
+                       }
+                    }
+                  }
+                }}
                 onClick={() => !files.length && fileInputRef.current?.click()}
               >
                 {files.length === 0 ? (
