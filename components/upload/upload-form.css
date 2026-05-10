@@ -1,0 +1,292 @@
+/* Scanline + noise overlay */
+.gg-root { position: relative; width: 100%; min-height: 100vh; }
+.gg-root::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,.018) 2px, rgba(0,229,255,.018) 4px);
+  mix-blend-mode: screen;
+}
+
+/* Animated corner accent for cards */
+@keyframes gg-pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+@keyframes gg-fadeup { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes gg-spin { to{transform:rotate(360deg)} }
+@keyframes gg-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes gg-glow {
+  0%,100%{box-shadow:0 0 10px rgba(0,229,255,.2),0 0 30px rgba(0,229,255,.06)}
+  50%{box-shadow:0 0 20px rgba(0,229,255,.4),0 0 60px rgba(0,229,255,.12)}
+}
+@keyframes gg-shimmer {
+  from{background-position:-300% 0} to{background-position:300% 0}
+}
+
+.gg-animate-up { animation: gg-fadeup .35s cubic-bezier(.16,1,.3,1) both }
+
+/* Drop zone */
+.gg-dropzone {
+  width: 100%;
+  border: 1px dashed rgba(0,229,255,.25);
+  border-radius: 12px;
+  background: rgba(0,229,255,.015);
+  cursor: pointer;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+  position: relative; overflow: hidden;
+}
+.gg-dropzone::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,229,255,.06), transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.gg-dropzone:hover, .gg-dropzone.drag-over {
+  border-color: rgba(0,229,255,.6);
+  background: rgba(0,229,255,.04);
+  box-shadow: 0 0 0 1px rgba(0,229,255,.12) inset, 0 8px 32px rgba(0,229,255,.06);
+}
+.gg-dropzone:hover::before, .gg-dropzone.drag-over::before { opacity: 1; }
+.gg-dropzone.drag-over { border-style: solid; animation: gg-glow 1.5s ease-in-out infinite; }
+
+/* Expiry pills */
+.gg-pill {
+  padding: 8px 16px; border-radius: 100px;
+  font-family: var(--font-mono, monospace); font-size: 11px; letter-spacing: .06em;
+  border: 1px solid rgba(0,229,255,.18); background: transparent;
+  color: var(--text-muted, #8892a4); cursor: pointer;
+  transition: all .18s cubic-bezier(.16,1,.3,1);
+}
+.gg-pill:hover { border-color: rgba(0,229,255,.45); color: #c8d8e8; }
+.gg-pill.active {
+  border-color: rgba(0,229,255,.7); background: rgba(0,229,255,.1);
+  color: #00e5ff; box-shadow: 0 0 12px rgba(0,229,255,.2), inset 0 0 12px rgba(0,229,255,.06);
+}
+
+/* Toggle */
+.gg-toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; cursor: pointer; }
+.gg-toggle input { opacity: 0; width: 0; height: 0; }
+.gg-toggle-track {
+  position: absolute; inset: 0; border-radius: 100px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+  transition: all .2s;
+}
+.gg-toggle input:checked ~ .gg-toggle-track {
+  background: rgba(0,229,255,.2); border-color: rgba(0,229,255,.5);
+  box-shadow: 0 0 8px rgba(0,229,255,.3);
+}
+.gg-toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; opacity: .35; transition: all .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+.gg-toggle input:checked ~ .gg-toggle-thumb { transform: translateX(18px); opacity: 1; background: #00e5ff; }
+
+/* Input */
+.gg-input {
+  width: 100%; padding: 13px 16px;
+  background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 8px; color: #e8f0f8;
+  font-family: var(--font-mono, monospace); font-size: 13px; letter-spacing: .04em;
+  outline: none; transition: border-color .18s, box-shadow .18s;
+}
+.gg-input::placeholder { color: rgba(136,146,164,.5); }
+.gg-input:focus {
+  border-color: rgba(0,229,255,.5);
+  box-shadow: 0 0 0 3px rgba(0,229,255,.08), 0 0 16px rgba(0,229,255,.08);
+}
+
+/* Card */
+.gg-card {
+  background: linear-gradient(135deg, rgba(14,22,32,.85), rgba(10,16,24,.7));
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px; padding: 24px;
+  transition: border-color .2s, box-shadow .2s;
+  backdrop-filter: blur(8px);
+  position: relative; overflow: hidden;
+}
+.gg-card::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(0,229,255,.04), transparent);
+}
+.gg-card:hover { border-color: rgba(0,229,255,.15); box-shadow: 0 4px 32px rgba(0,0,0,.3); }
+
+/* Generate button */
+.gg-generate {
+  width: 100%; padding: 16px;
+  font-family: var(--font-mono, monospace); font-size: 13px; letter-spacing: .08em; font-weight: 700;
+  border: none; border-radius: 10px; cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: all .25s cubic-bezier(.16,1,.3,1);
+}
+.gg-generate.ready {
+  background: linear-gradient(135deg, #00c8e6, #00e5ff 50%, #00c8e6);
+  background-size: 200% 100%;
+  color: #041a20;
+  box-shadow: 0 4px 20px rgba(0,229,255,.35), 0 0 0 0 rgba(0,229,255,.3);
+}
+.gg-generate.ready:hover {
+  background-position: 100% 0;
+  box-shadow: 0 6px 30px rgba(0,229,255,.5), 0 0 40px rgba(0,229,255,.15);
+  transform: translateY(-1px);
+}
+.gg-generate.ready:active { transform: translateY(0); }
+.gg-generate.ready::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.25) 50%, transparent 100%);
+  background-size: 200% 100%; animation: gg-shimmer 2s linear infinite;
+}
+.gg-generate.disabled {
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.2);
+  cursor: not-allowed; border: 1px solid rgba(255,255,255,.06);
+}
+.gg-generate.loading {
+  background: rgba(0,229,255,.12); color: #00e5ff;
+  border: 1px solid rgba(0,229,255,.3);
+  box-shadow: 0 0 20px rgba(0,229,255,.1);
+  cursor: wait;
+}
+
+/* Badge */
+.gg-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 100px;
+  border: 1px solid rgba(0,229,255,.12);
+  background: rgba(0,229,255,.04);
+  color: rgba(136,146,164,.8);
+  font-size: 11px; font-family: var(--font-mono, monospace); letter-spacing: .04em;
+  transition: all .2s;
+}
+.gg-badge:hover { border-color: rgba(0,229,255,.3); color: #00e5ff; }
+
+/* Tab */
+.gg-tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 18px; border-radius: 8px;
+  font-family: var(--font-mono, monospace); font-size: 12px; letter-spacing: .05em;
+  border: 1px solid transparent; background: transparent;
+  color: rgba(136,146,164,.7); cursor: pointer;
+  transition: all .18s;
+}
+.gg-tab.active {
+  background: rgba(0,229,255,.08); border-color: rgba(0,229,255,.35); color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0,229,255,.1);
+}
+.gg-tab:not(.active):hover { background: rgba(255,255,255,.04); color: #c8d8e8; }
+
+/* Gallery link row */
+.gg-link-row {
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 8px; padding: 12px 14px;
+  transition: border-color .15s;
+}
+.gg-link-row:hover { border-color: rgba(255,255,255,.12); }
+.gg-link-row.active-link { border-color: rgba(0,229,255,.12); }
+
+/* Small action button */
+.gg-action-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 6px;
+  font-family: var(--font-mono, monospace); font-size: 11px; letter-spacing: .03em;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+  color: rgba(200,216,232,.7); cursor: pointer; transition: all .15s;
+}
+.gg-action-btn:hover { background: rgba(255,255,255,.08); color: #e8f0f8; border-color: rgba(255,255,255,.2); }
+.gg-action-btn.cyan { border-color: rgba(0,229,255,.25); color: #00e5ff; background: rgba(0,229,255,.06); }
+.gg-action-btn.cyan:hover { background: rgba(0,229,255,.12); border-color: rgba(0,229,255,.5); }
+.gg-action-btn.danger { border-color: rgba(239,68,68,.2); color: #ef4444; background: rgba(239,68,68,.04); }
+.gg-action-btn.danger:hover { background: rgba(239,68,68,.1); border-color: rgba(239,68,68,.4); }
+
+/* Scrollbar */
+.gg-scroll::-webkit-scrollbar { width: 4px; }
+.gg-scroll::-webkit-scrollbar-track { background: transparent; }
+.gg-scroll::-webkit-scrollbar-thumb { background: rgba(0,229,255,.2); border-radius: 2px; }
+
+/* Preview thumb */
+.gg-thumb {
+  position: relative; border-radius: 8px; overflow: hidden;
+  aspect-ratio: 1; background: rgba(0,0,0,.4);
+  border: 1px solid rgba(255,255,255,.08);
+  transition: border-color .15s, transform .15s;
+}
+.gg-thumb:hover { border-color: rgba(0,229,255,.35); transform: scale(1.02); }
+.gg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gg-thumb .gg-remove {
+  position: absolute; top: 6px; right: 6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,.7); border: 1px solid rgba(255,255,255,.2);
+  color: #fff; font-size: 14px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity .15s;
+}
+.gg-thumb:hover .gg-remove { opacity: 1; }
+
+/* Section label */
+.gg-section-label {
+  font-family: var(--font-mono, monospace); font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(136,146,164,.6);
+  display: flex; align-items: center; gap: 8px;
+}
+.gg-section-label::before {
+  content: ''; display: block; width: 18px; height: 1px;
+  background: rgba(0,229,255,.4);
+}
+
+/* Status dot */
+.gg-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.gg-dot.active { background: #00e5ff; box-shadow: 0 0 6px #00e5ff; animation: gg-pulse 2s ease-in-out infinite; }
+.gg-dot.used { background: #ef4444; }
+.gg-dot.expired { background: rgba(136,146,164,.4); }
+
+/* Error panel */
+.gg-error {
+  width: 100%; padding: 12px 16px; border-radius: 8px;
+  background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.25);
+  color: #ef4444; font-family: var(--font-mono, monospace); font-size: 11px;
+  letter-spacing: .04em; display: flex; align-items: center; gap: 10px;
+}
+
+/* Progress bar */
+.gg-progress-bar {
+  height: 2px; border-radius: 1px; background: rgba(0,229,255,.15); overflow: hidden;
+}
+.gg-progress-fill {
+  height: 100%; background: linear-gradient(90deg, #00a8c0, #00e5ff);
+  transition: width .3s ease; box-shadow: 0 0 8px rgba(0,229,255,.5);
+}
+
+/* Dashed action button (add more / create link) */
+.gg-dashed-btn {
+  flex: 1; padding: 14px; border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,.12); background: transparent;
+  color: rgba(136,146,164,.6);
+  font-family: var(--font-mono, monospace); font-size: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  cursor: pointer; transition: all .2s;
+}
+.gg-dashed-btn:hover {
+  border-color: rgba(0,229,255,.35); color: #00e5ff;
+  background: rgba(0,229,255,.04);
+}
+.gg-dashed-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Logo hex */
+@keyframes gg-hex-rotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.gg-hex { font-size: 28px; color: #00e5ff; display: inline-block; animation: gg-pulse 3s ease-in-out infinite; }
+
+/* Modal backdrop */
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.gg-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(2,6,12,.88); backdrop-filter: blur(18px) saturate(1.6);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .2s ease-out;
+}
+.gg-modal {
+  background: linear-gradient(160deg, rgba(12,20,30,.98), rgba(8,14,22,.95));
+  border: 1px solid rgba(255,255,255,.1); border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.7), 0 0 0 1px rgba(0,229,255,.06);
+  padding: 40px 36px; width: 90%; max-width: 440px;
+  display: flex; flex-direction: column; gap: 24px;
+  position: relative; animation: gg-fadeup .25s cubic-bezier(.16,1,.3,1);
+}
