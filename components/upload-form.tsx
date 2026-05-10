@@ -220,7 +220,6 @@ export function UploadForm() {
         
         // Reset states
         setTargetUrl('')
-        setGalleryPassword('')
         return
       }
 
