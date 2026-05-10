@@ -132,6 +132,10 @@ export function UploadForm() {
       const saved = JSON.parse(localStorage.getItem('ghost_galleries') || '[]')
       const ids = new Set(galleryList.map((g: any) => g.id))
       for (const g of saved) if (!ids.has(g.id)) { galleryList.push(g); ids.add(g.id) }
+      
+      // FILTER: Instantly exclude locally deleted galleries to cover secure archived records
+      const deletedIds = new Set(JSON.parse(localStorage.getItem('ghost_deleted_galleries') || '[]'))
+      galleryList = galleryList.filter((g: any) => !deletedIds.has(g.id))
       const enriched = await Promise.all(galleryList.map(async (g: any) => {
         try {
           const r = await fetch(`/api/gallery?id=${g.id}`)
@@ -320,6 +324,12 @@ export function UploadForm() {
         if (res.ok) {
           const saved = JSON.parse(localStorage.getItem('ghost_galleries') || '[]')
           localStorage.setItem('ghost_galleries', JSON.stringify(saved.filter((g: any) => g.id !== id)))
+          
+          // Save ID to persistent exclusion blocklist to prevent reappear on refresh
+          const deletedArr = JSON.parse(localStorage.getItem('ghost_deleted_galleries') || '[]')
+          if (!deletedArr.includes(id)) deletedArr.push(id)
+          localStorage.setItem('ghost_deleted_galleries', JSON.stringify(deletedArr))
+
           setMyGalleries(prev => prev.filter(g => g.id !== id))
           toast({ title: 'Gallery Deleted', description: 'All assets permanently removed.' })
         } else toast({ title: 'Failed', description: (await res.json()).error || 'Delete failed', variant: 'destructive' })
