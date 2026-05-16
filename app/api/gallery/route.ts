@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
       const { data: galleries, error } = await supabase
         .from('galleries')
-        .select('id, title, created_at, gallery_images(id)')
+        .select('id, title, created_at, target_url, gallery_images(id)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
         id: g.id,
         title: g.title,
         createdAt: g.created_at,
-        imageCount: g.gallery_images ? g.gallery_images.length : 0
+        imageCount: g.gallery_images ? g.gallery_images.length : 0,
+        targetUrl: g.target_url
       }))
 
       return NextResponse.json({ success: true, galleries: formattedGalleries })

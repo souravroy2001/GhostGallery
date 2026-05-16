@@ -91,6 +91,9 @@ export async function GET(
       console.warn(`Target responded with ${fetchResponse.status}: ${fetchResponse.statusText}`)
     }
 
+    // Ensure status is valid for NextResponse (200-599)
+    const safeStatus = fetchResponse.status >= 200 && fetchResponse.status <= 599 ? fetchResponse.status : (fetchResponse.status > 599 ? 500 : 200)
+
     const contentType = fetchResponse.headers.get('content-type') || 'text/html'
     const parsedUrl = new URL(urlToFetch)
 
@@ -118,6 +121,7 @@ export async function GET(
       })
 
       return new NextResponse(css, {
+        status: safeStatus,
         headers: {
           'Content-Type': 'text/css; charset=utf-8',
           'Cache-Control': 'public, max-age=3600',
@@ -188,6 +192,7 @@ export async function GET(
 
       // Return rewritten HTML
       return new NextResponse(html, {
+        status: safeStatus,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
         },
@@ -207,14 +212,14 @@ export async function GET(
     // Stream the body directly for high performance and 100% accurate binary preservation
     if (fetchResponse.body) {
       return new NextResponse(fetchResponse.body, {
-        status: fetchResponse.status,
+        status: safeStatus,
         headers: responseHeaders,
       })
     }
 
     const rawBuffer = await fetchResponse.arrayBuffer()
     return new NextResponse(new Uint8Array(rawBuffer), {
-      status: fetchResponse.status,
+      status: safeStatus,
       headers: responseHeaders,
     })
   } catch (error) {

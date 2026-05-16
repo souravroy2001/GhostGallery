@@ -71,6 +71,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    let iframeBlocked = false
+    if (shareLink.galleries.target_url) {
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000)
+        const headRes = await fetch(shareLink.galleries.target_url, {
+          method: 'HEAD',
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GhostGallery/1.0)' },
+          signal: controller.signal,
+        })
+        clearTimeout(timeoutId)
+        
+        const xFrameOptions = headRes.headers.get('x-frame-options')
+        const csp = headRes.headers.get('content-security-policy')
+        
+        if (
+          headRes.status >= 400 ||
+          (xFrameOptions && ['DENY', 'SAMEORIGIN'].includes(xFrameOptions.toUpperCase())) ||
+          (csp && csp.toLowerCase().includes('frame-ancestors'))
+        ) {
+          iframeBlocked = true
+        }
+      } catch (e) {
+        // Fallback to true if fetch fails (CORS, network error, etc)
+        iframeBlocked = true
+      }
+    }
+
     // Create response with session cookie
     const response = NextResponse.json({
       valid: true,
@@ -79,6 +107,7 @@ export async function POST(request: NextRequest) {
         title: shareLink.galleries.title,
         watermarkText: shareLink.galleries.watermark_text,
         targetUrl: shareLink.galleries.target_url || null,
+        iframeBlocked,
         images: (shareLink.galleries.gallery_images || []).map((img: {
           id: string
           blob_pathname: string

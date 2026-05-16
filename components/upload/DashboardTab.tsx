@@ -80,9 +80,11 @@ export function DashboardTab({
                 </p>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <span style={{ padding: '4px 10px', borderRadius: '100px', background: 'rgba(0,229,255,.07)', border: '1px solid rgba(0,229,255,.18)', fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#00e5ff' }}>
-                  {gal.images?.length || gal.imageCount || 0} photo{(gal.images?.length || gal.imageCount) !== 1 ? 's' : ''}
-                </span>
+                {!(gal.targetUrl || gal.target_url) && (
+                  <span style={{ padding: '4px 10px', borderRadius: '100px', background: 'rgba(0,229,255,.07)', border: '1px solid rgba(0,229,255,.18)', fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#00e5ff' }}>
+                    {gal.images?.length || gal.imageCount || 0} photo{(gal.images?.length || gal.imageCount) !== 1 ? 's' : ''}
+                  </span>
+                )}
                 <button className="gg-action-btn danger" onClick={() => handleDeleteGallery(gal.id)} disabled={deletingGalleryId === gal.id}>
                   {deletingGalleryId === gal.id ? <Loader2 size={11} style={{ animation: 'gg-spin 1s linear infinite' }} /> : <Trash2 size={11} />}
                   {deletingGalleryId === gal.id ? 'Deleting' : 'Delete'}
@@ -207,12 +209,14 @@ export function DashboardTab({
                       <button className="gg-dashed-btn" onClick={() => { setGeneratingLinkFor(gal.id); setNewLinkResult(null) }}>
                         <Plus size={13} /> Create Share Link
                       </button>
-                      <button className="gg-dashed-btn" disabled={isAddingMore} onClick={() => { setAddingToGalleryId(gal.id); addMoreFileInputRef.current?.click() }}>
-                        {isAddingMore && addingToGalleryId === gal.id
-                          ? <><Loader2 size={13} style={{ animation: 'gg-spin 1s linear infinite' }} /> Adding…</>
-                          : <><Plus size={13} /> Add Images</>
-                        }
-                      </button>
+                      {!(gal.targetUrl || gal.target_url) && (
+                        <button className="gg-dashed-btn" disabled={isAddingMore} onClick={() => { setAddingToGalleryId(gal.id); addMoreFileInputRef.current?.click() }}>
+                          {isAddingMore && addingToGalleryId === gal.id
+                            ? <><Loader2 size={13} style={{ animation: 'gg-spin 1s linear infinite' }} /> Adding…</>
+                            : <><Plus size={13} /> Add Images</>
+                          }
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

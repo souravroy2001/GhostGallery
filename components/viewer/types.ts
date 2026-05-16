@@ -9,5 +9,6 @@ export interface GalleryData {
   title: string
   watermarkText: string
   targetUrl: string | null
+  iframeBlocked?: boolean
   images: GalleryImage[]
 }

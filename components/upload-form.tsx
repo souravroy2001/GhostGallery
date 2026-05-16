@@ -207,7 +207,7 @@ export function UploadForm() {
         })
         if (!initRes.ok) throw new Error((await initRes.json().catch(() => ({}))).error || 'Link creation failed')
         const data = await initRes.json()
-        setShareResult({ url: data.shareLink.url, expiresAt: data.shareLink.expiresAt, originalUrl: data.shareLink.originalUrl })
+        setShareResult({ url: data.shareLink.url, expiresAt: data.shareLink.expiresAt, originalUrl: data.shareLink.originalUrl, isLinkMode: true })
         setTargetUrl('')
         return
       }
@@ -238,10 +238,10 @@ export function UploadForm() {
       })
       if (!finalRes.ok) throw new Error((await finalRes.json().catch(() => ({}))).error || 'Finalize failed')
       const data = await finalRes.json()
-      setShareResult({ url: data.shareLink.url, expiresAt: data.shareLink.expiresAt, originalUrl: data.shareLink.originalUrl })
+      setShareResult({ url: data.shareLink.url, expiresAt: data.shareLink.expiresAt, originalUrl: data.shareLink.originalUrl, isLinkMode: false })
       if (user && data.gallery) {
         const saved = JSON.parse(localStorage.getItem('ghost_galleries') || '[]')
-        localStorage.setItem('ghost_galleries', JSON.stringify([{ id: data.gallery.id, title: data.gallery.title, createdAt: new Date().toISOString(), imageCount: data.gallery.imageCount }, ...saved]))
+        localStorage.setItem('ghost_galleries', JSON.stringify([{ id: data.gallery.id, title: data.gallery.title, createdAt: new Date().toISOString(), imageCount: data.gallery.imageCount, targetUrl: data.gallery.targetUrl }, ...saved]))
       }
       files.forEach(f => URL.revokeObjectURL(f.preview)); setFiles([])
     } catch (err) { setError(err instanceof Error ? err.message : 'Upload failed') }
@@ -356,6 +356,7 @@ export function UploadForm() {
   if (shareResult) return (
     <ShareLinkDisplay shareUrl={shareResult.url} expiresAt={shareResult.expiresAt}
       watermarkText={watermarkEnabled ? watermarkText : 'disabled'} originalUrl={shareResult.originalUrl}
+      isLinkMode={shareResult.isLinkMode}
       onReset={() => { setShareResult(null); setError(null) }} />
   )
 

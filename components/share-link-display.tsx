@@ -9,9 +9,10 @@ interface ShareLinkDisplayProps {
   watermarkText?: string
   onReset?: () => void
   originalUrl?: string
+  isLinkMode?: boolean
 }
 
-export function ShareLinkDisplay({ shareUrl, expiresAt, watermarkText, onReset, originalUrl }: ShareLinkDisplayProps) {
+export function ShareLinkDisplay({ shareUrl, expiresAt, watermarkText, onReset, originalUrl, isLinkMode }: ShareLinkDisplayProps) {
   const [copied, setCopied] = useState(false)
   const [timeLeftStr, setTimeLeftStr] = useState<string>('Calculating...')
 
@@ -96,7 +97,7 @@ export function ShareLinkDisplay({ shareUrl, expiresAt, watermarkText, onReset, 
           </button>
           {onReset && (
             <button className="reset-btn" onClick={onReset}>
-              Upload new photos
+              {isLinkMode ? 'Create new link' : 'Upload new photos'}
             </button>
           )}
         </div>

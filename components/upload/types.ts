@@ -7,6 +7,7 @@ export interface ShareResult {
   url: string; 
   expiresAt: string; 
   originalUrl?: string; 
+  isLinkMode?: boolean;
 }
 
 export interface ExpiryOption {

@@ -199,20 +199,32 @@ export function ImageViewer({ token }: ImageViewerProps) {
 
       {/* ── Content ── */}
       {gallery.targetUrl ? (
-        <div style={{ width: '100%', height: 'calc(100vh - 86px)', position: 'relative', background: '#020609' }}>
-          {/* Watermark Overlay */}
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, overflow: 'hidden' }}>
-            {gallery.watermarkText && gallery.watermarkText !== 'disabled' && gallery.watermarkText !== '__disabled__' && (
-              <div style={{ width: '100%', height: '100%', display: 'flex', flexWrap: 'wrap', gap: '120px', alignContent: 'center', justifyContent: 'center', opacity: 0.12, transform: 'rotate(-25deg) scale(1.4)' }}>
-                {Array.from({ length: 48 }).map((_, i) => (
-                  <div key={i} style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '13px', fontWeight: 700, color: '#00e5ff', whiteSpace: 'nowrap', userSelect: 'none' }}>
-                    ⚠ {gallery.watermarkText.toUpperCase()} ⚠ {sessionId.slice(0, 8).toUpperCase()}
+        <div style={{ width: '100%', height: 'calc(100vh - 86px)', position: 'relative', background: '#020609', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          {gallery.iframeBlocked ? (
+            <div style={{ padding: 40, textAlign: 'center', maxWidth: 400, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <AlertTriangle size={48} color="#ef4444" style={{ marginBottom: 20, opacity: 0.8 }} />
+              <h2 style={{ fontFamily: 'var(--font-mono)', color: '#fff', fontSize: 18, marginBottom: 10 }}>URL NOT SUPPORTED</h2>
+              <p style={{ color: 'rgba(200,216,232,0.7)', fontSize: 14, lineHeight: 1.5 }}>
+                This URL does not allow secure iframe embedding. Please check the URL, or if it is your website, ensure that X-Frame-Options allows framing.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Watermark Overlay */}
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, overflow: 'hidden' }}>
+                {gallery.watermarkText && gallery.watermarkText !== 'disabled' && gallery.watermarkText !== '__disabled__' && (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', flexWrap: 'wrap', gap: '120px', alignContent: 'center', justifyContent: 'center', opacity: 0.12, transform: 'rotate(-25deg) scale(1.4)' }}>
+                    {Array.from({ length: 48 }).map((_, i) => (
+                      <div key={i} style={{ fontFamily: 'var(--font-mono), monospace', fontSize: '13px', fontWeight: 700, color: '#00e5ff', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                        ⚠ {gallery.watermarkText.toUpperCase()} ⚠ {sessionId.slice(0, 8).toUpperCase()}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-          <iframe src={gallery.targetUrl} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} title={gallery.title || 'Secure Link'} />
+              <iframe src={gallery.targetUrl} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} title={gallery.title || 'Secure Link'} />
+            </>
+          )}
         </div>
       ) : (
         <div className="iv-grid">
